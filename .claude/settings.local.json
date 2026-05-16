@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"console.log\\('wait'\\)\")",
+      "Bash(curl -s http://localhost:3010/api/health)",
+      "Bash(curl -s -i -c cookies.txt -X POST http://localhost:3010/api/auth/signup -H \"Content-Type: application/json\" -d \"{\\\\\"name\\\\\":\\\\\"Test Rider\\\\\",\\\\\"email\\\\\":\\\\\"test@northstar.club\\\\\",\\\\\"password\\\\\":\\\\\"pedalpedal\\\\\",\\\\\"neighborhood\\\\\":\\\\\"Powderhorn\\\\\"}\")",
+      "Bash(findstr /R \"HTTP Set-Cookie {\")",
+      "Bash(curl -s -b cookies.txt http://localhost:3010/api/auth/me)",
+      "Bash(curl -s -b cookies.txt -X POST http://localhost:3010/api/routes -H \"Content-Type: application/json\" -d \"{\\\\\"title\\\\\":\\\\\"Test Loop\\\\\",\\\\\"distanceMiles\\\\\":12.3,\\\\\"start\\\\\":\\\\\"Lake St\\\\\",\\\\\"terrain\\\\\":\\\\\"greenway\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:3010/api/routes -H \"Content-Type: application/json\" -d \"{\\\\\"title\\\\\":\\\\\"x\\\\\",\\\\\"distanceMiles\\\\\":1,\\\\\"start\\\\\":\\\\\"y\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:3010/api/auth/signup -H \"Content-Type: application/json\" -d \"{\\\\\"name\\\\\":\\\\\"Dup\\\\\",\\\\\"email\\\\\":\\\\\"test@northstar.club\\\\\",\\\\\"password\\\\\":\\\\\"pedalpedal\\\\\",\\\\\"neighborhood\\\\\":\\\\\"X\\\\\"}\")"
+    ]
+  }
+}

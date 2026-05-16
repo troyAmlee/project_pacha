@@ -1,0 +1,139 @@
+{
+  "club": {
+    "name": "North Star Ridebook",
+    "city": "Minneapolis, Minnesota",
+    "description": "A shared ride board for people who want one place to join the crew, trade routes, post ride photos, and keep the club journal moving."
+  },
+  "members": [
+    {
+      "id": "member-mp7vksx2-8bs752",
+      "name": "Troy Amlee",
+      "email": "troyamlee19@gmail.com",
+      "passwordHash": "$2b$12$g9/3Q9nb8.T0Om0SqzWZUeRZWYVxnK4cJw0Th2qy4MmoGM0VZ6Wny",
+      "neighborhood": "Longfellow",
+      "pace": "easy",
+      "bio": "The thrill of it.",
+      "createdAt": "2026-05-16T04:57:51.163Z"
+    },
+    {
+      "id": "member-seed-1",
+      "name": "Marisol Vega",
+      "neighborhood": "Longfellow",
+      "pace": "steady",
+      "bio": "Weeknight river loops, bakery stops on Saturdays, and a low tolerance for headwinds without coffee.",
+      "createdAt": "2026-05-11T07:15:00.000Z"
+    },
+    {
+      "id": "member-seed-2",
+      "name": "Theo Johnson",
+      "neighborhood": "North Loop",
+      "pace": "fast",
+      "bio": "Commutes year-round and posts route notes every time the pavement changes.",
+      "createdAt": "2026-05-10T18:45:00.000Z"
+    },
+    {
+      "id": "member-seed-3",
+      "name": "Amina Yusuf",
+      "neighborhood": "Powderhorn",
+      "pace": "easy",
+      "bio": "Brings new riders into the group and always knows where the calmest trail entry is.",
+      "createdAt": "2026-05-09T16:20:00.000Z"
+    }
+  ],
+  "routes": [
+    {
+      "id": "route-seed-1",
+      "title": "Mississippi sunrise loop",
+      "createdBy": "Marisol Vega",
+      "distanceMiles": 16.4,
+      "start": "Stone Arch Bridge",
+      "terrain": "city streets",
+      "notes": "Early morning river light, smooth warm-up, and enough turns to keep it interesting without getting hectic.",
+      "createdAt": "2026-05-13T06:35:00.000Z"
+    },
+    {
+      "id": "route-seed-2",
+      "title": "Greenway shakeout to Bde Maka Ska",
+      "createdBy": "Amina Yusuf",
+      "distanceMiles": 11.2,
+      "start": "Midtown Greenway access at 10th Ave",
+      "terrain": "greenway",
+      "notes": "Great for newer riders. Mostly forgiving pace with an easy lake lap once the group settles in.",
+      "createdAt": "2026-05-12T17:15:00.000Z"
+    },
+    {
+      "id": "route-seed-3",
+      "title": "Northside gravel connector",
+      "createdBy": "Theo Johnson",
+      "distanceMiles": 24.8,
+      "start": "Boom Island Park",
+      "terrain": "mixed surface",
+      "notes": "Pavement into short gravel stretches. Best when the river trail is dry and the group wants a longer pull.",
+      "createdAt": "2026-05-11T11:05:00.000Z"
+    }
+  ],
+  "photos": [
+    {
+      "id": "photo-mp7ty9wd-c2sk93",
+      "createdBy": "Troy Amlee",
+      "routeTag": "Greenway, Minneapols",
+      "caption": "Xxicas",
+      "imageUrl": "/uploads/1778904739732-99136701-10216551063875367-208363986108809216-n.jpg",
+      "createdAt": "2026-05-16T04:12:19.741Z"
+    },
+    {
+      "id": "photo-seed-1",
+      "createdBy": "Theo Johnson",
+      "routeTag": "Sunrise loop",
+      "caption": "Cold river air, soft orange light, and just enough traffic noise to remind you this is still the city.",
+      "imageUrl": "",
+      "createdAt": "2026-05-13T07:25:00.000Z"
+    },
+    {
+      "id": "photo-seed-2",
+      "createdBy": "Amina Yusuf",
+      "routeTag": "Greenway shakeout",
+      "caption": "A quick regroup before the lake lap when the pace settled and everyone finally unclipped to talk.",
+      "imageUrl": "",
+      "createdAt": "2026-05-12T18:10:00.000Z"
+    },
+    {
+      "id": "photo-seed-3",
+      "createdBy": "Marisol Vega",
+      "routeTag": "Northside gravel",
+      "caption": "Dust on the frame, sun coming through the trees, and a route that felt longer in the best way.",
+      "imageUrl": "",
+      "createdAt": "2026-05-11T12:40:00.000Z"
+    }
+  ],
+  "posts": [
+    {
+      "id": "post-mp7tvnl5-ce90jl",
+      "title": "Test Post",
+      "createdBy": "Troy Amlee",
+      "body": "We went through the Minnehaha Falls today.",
+      "createdAt": "2026-05-16T04:10:17.513Z"
+    },
+    {
+      "id": "post-seed-1",
+      "title": "Saturday social rides need clearer regroup points",
+      "createdBy": "Amina Yusuf",
+      "body": "The route worked, but new riders had trouble knowing where the first full regroup would happen. Next time we should note two obvious landmarks in the route post so nobody has to guess whether they should keep pushing or soft pedal.",
+      "createdAt": "2026-05-13T14:05:00.000Z"
+    },
+    {
+      "id": "post-seed-2",
+      "title": "Rain route fallback for weekday spins",
+      "createdBy": "Theo Johnson",
+      "body": "When the streets are slick, the lower-traffic river option is still good, but the club should pin one short fallback loop for commuters who want a predictable thirty to forty minutes without debating conditions in the group chat.",
+      "createdAt": "2026-05-12T20:50:00.000Z"
+    },
+    {
+      "id": "post-seed-3",
+      "title": "Volunteer ride for trail cleanup",
+      "createdBy": "Marisol Vega",
+      "body": "A ride-to-cleanup format would fit this group well: meet at the bridge, spin to the work site, spend an hour helping out, then head to coffee after. This space can double as the planning board for those kinds of club days.",
+      "createdAt": "2026-05-11T15:15:00.000Z"
+    }
+  ]
+}
