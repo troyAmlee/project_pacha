@@ -9,8 +9,8 @@ North Star Ridebook (React + Express bike-club app) is being extended in 4 phase
 **Decisions made:** Leaflet + OpenStreetMap for maps; route paths created by recording-while-riding AND drawing-on-a-map (no GPX upload); real accounts with email/password login.
 
 **Phases:**
-- Phase 1 — auth (bcrypt + signed-cookie sessions), routing, App.jsx refactor into contexts/pages/components, server hardening. **DONE (verified, 2026-05-15), not yet committed.**
-- Phase 2 — rider profiles (`bike`, `avatarUrl`, `favoriteRouteIds`, `groupIds`) + ride metrics displayed on `/riders/:id`: miles biked, routes taken (show both total rides and unique routes).
+- Phase 1 — auth (bcrypt + signed-cookie sessions), routing, App.jsx refactor into contexts/pages/components, server hardening. **DONE — committed by user (06240cf).**
+- Phase 2 — rider profiles + ride metrics. **DONE (verified, 2026-05-16) on branch `phase-2-profiles`, not yet committed.** Added `bike`/`favoriteRouteIds` to members, `/riders/:id` page, `metricsByRider` in bootstrap, `PUT /api/riders/me`, `POST /api/riders/me/favorites`, seeded `rides`. `avatarUrl` deferred (uses initials); `groupIds` deferred to Phase 4.
 - Phase 3 — routes get geometry (`path: [[lat,lng]]`, `startCoords`); GPS record/draw/follow screens; completing a route writes a `rides` record.
 - Phase 4 — bike club groups (`groups` collection: memberIds, pinnedRouteIds).
 

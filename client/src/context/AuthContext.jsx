@@ -33,8 +33,15 @@ export function AuthProvider({ children }) {
     setMember(null);
   }
 
+  // Sync the cached rider after a profile edit or favorite toggle.
+  function updateMember(updated) {
+    setMember(updated);
+  }
+
   return (
-    <AuthContext.Provider value={{ member, loading, login, signup, logout }}>
+    <AuthContext.Provider
+      value={{ member, loading, login, signup, logout, updateMember }}
+    >
       {children}
     </AuthContext.Provider>
   );

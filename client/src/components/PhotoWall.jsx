@@ -5,6 +5,7 @@ import { useClubData } from "../context/ClubDataContext";
 import { useForm } from "../hooks/useForm";
 import FormFeedback from "./FormFeedback";
 import LockedNote from "./LockedNote";
+import RiderLink from "./RiderLink";
 
 const emptyPhotoForm = {
   routeTag: "",
@@ -115,7 +116,7 @@ export default function PhotoWall() {
               <div className="photo-copy">
                 <p>{photo.caption}</p>
                 <footer>
-                  <span>{photo.createdBy}</span>
+                  <RiderLink riderId={photo.createdById} name={photo.createdBy} />
                   <span>{photo.routeTag}</span>
                 </footer>
               </div>

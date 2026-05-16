@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
 import { getInitials, toTitleCase } from "../utils";
+import RiderLink from "./RiderLink";
 
 export default function MemberRoster() {
   const { member } = useAuth();
@@ -52,7 +53,9 @@ export default function MemberRoster() {
             <article className="member-chip" key={rider.id}>
               <div className="member-avatar">{getInitials(rider.name)}</div>
               <div>
-                <h3>{rider.name}</h3>
+                <h3>
+                  <RiderLink riderId={rider.id} name={rider.name} />
+                </h3>
                 <p>
                   {rider.neighborhood} · {toTitleCase(rider.pace)}
                 </p>

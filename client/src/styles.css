@@ -791,3 +791,111 @@ img {
   color: var(--accent);
   font-weight: 600;
 }
+
+/* --- Rider profiles, metrics, favorites --- */
+
+.profile-header {
+  display: grid;
+  gap: 16px;
+}
+
+.profile-id {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.profile-avatar {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  flex-shrink: 0;
+  border-radius: 22px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.profile-header h1 {
+  margin: 4px 0 0;
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: clamp(2rem, 3.6vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.profile-meta {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.97rem;
+}
+
+.profile-bio {
+  margin: 0;
+  max-width: 48rem;
+  font-size: 1.05rem;
+}
+
+.profile-header .button--outline {
+  justify-self: start;
+}
+
+.profile-edit {
+  margin-top: 4px;
+}
+
+.profile-edit__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.favorite-button {
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.favorite-button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.favorite-button.is-favorite {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.favorite-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.empty-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.97rem;
+}
+
+.content-section--gallery .empty-note {
+  color: rgba(248, 244, 238, 0.72);
+}
+
+.story-row footer a:hover,
+.photo-copy footer a:hover,
+.journal-entry__meta a:hover,
+.member-chip h3 a:hover,
+.topbar-rider:hover {
+  text-decoration: underline;
+}

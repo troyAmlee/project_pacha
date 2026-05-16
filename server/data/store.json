@@ -12,7 +12,9 @@
       "passwordHash": "$2b$12$g9/3Q9nb8.T0Om0SqzWZUeRZWYVxnK4cJw0Th2qy4MmoGM0VZ6Wny",
       "neighborhood": "Longfellow",
       "pace": "easy",
+      "bike": "",
       "bio": "The thrill of it.",
+      "favoriteRouteIds": [],
       "createdAt": "2026-05-16T04:57:51.163Z"
     },
     {
@@ -20,7 +22,12 @@
       "name": "Marisol Vega",
       "neighborhood": "Longfellow",
       "pace": "steady",
+      "bike": "Steel all-road with fenders for year-round river miles",
       "bio": "Weeknight river loops, bakery stops on Saturdays, and a low tolerance for headwinds without coffee.",
+      "favoriteRouteIds": [
+        "route-seed-1",
+        "route-seed-3"
+      ],
       "createdAt": "2026-05-11T07:15:00.000Z"
     },
     {
@@ -28,7 +35,11 @@
       "name": "Theo Johnson",
       "neighborhood": "North Loop",
       "pace": "fast",
+      "bike": "Carbon endurance bike built for long pulls",
       "bio": "Commutes year-round and posts route notes every time the pavement changes.",
+      "favoriteRouteIds": [
+        "route-seed-3"
+      ],
       "createdAt": "2026-05-10T18:45:00.000Z"
     },
     {
@@ -36,7 +47,11 @@
       "name": "Amina Yusuf",
       "neighborhood": "Powderhorn",
       "pace": "easy",
+      "bike": "Aluminum hybrid commuter with wide, forgiving tires",
       "bio": "Brings new riders into the group and always knows where the calmest trail entry is.",
+      "favoriteRouteIds": [
+        "route-seed-2"
+      ],
       "createdAt": "2026-05-09T16:20:00.000Z"
     }
   ],
@@ -45,6 +60,7 @@
       "id": "route-seed-1",
       "title": "Mississippi sunrise loop",
       "createdBy": "Marisol Vega",
+      "createdById": "member-seed-1",
       "distanceMiles": 16.4,
       "start": "Stone Arch Bridge",
       "terrain": "city streets",
@@ -55,6 +71,7 @@
       "id": "route-seed-2",
       "title": "Greenway shakeout to Bde Maka Ska",
       "createdBy": "Amina Yusuf",
+      "createdById": "member-seed-3",
       "distanceMiles": 11.2,
       "start": "Midtown Greenway access at 10th Ave",
       "terrain": "greenway",
@@ -65,6 +82,7 @@
       "id": "route-seed-3",
       "title": "Northside gravel connector",
       "createdBy": "Theo Johnson",
+      "createdById": "member-seed-2",
       "distanceMiles": 24.8,
       "start": "Boom Island Park",
       "terrain": "mixed surface",
@@ -76,6 +94,7 @@
     {
       "id": "photo-mp7ty9wd-c2sk93",
       "createdBy": "Troy Amlee",
+      "createdById": "member-mp7vksx2-8bs752",
       "routeTag": "Greenway, Minneapols",
       "caption": "Xxicas",
       "imageUrl": "/uploads/1778904739732-99136701-10216551063875367-208363986108809216-n.jpg",
@@ -84,6 +103,7 @@
     {
       "id": "photo-seed-1",
       "createdBy": "Theo Johnson",
+      "createdById": "member-seed-2",
       "routeTag": "Sunrise loop",
       "caption": "Cold river air, soft orange light, and just enough traffic noise to remind you this is still the city.",
       "imageUrl": "",
@@ -92,6 +112,7 @@
     {
       "id": "photo-seed-2",
       "createdBy": "Amina Yusuf",
+      "createdById": "member-seed-3",
       "routeTag": "Greenway shakeout",
       "caption": "A quick regroup before the lake lap when the pace settled and everyone finally unclipped to talk.",
       "imageUrl": "",
@@ -100,6 +121,7 @@
     {
       "id": "photo-seed-3",
       "createdBy": "Marisol Vega",
+      "createdById": "member-seed-1",
       "routeTag": "Northside gravel",
       "caption": "Dust on the frame, sun coming through the trees, and a route that felt longer in the best way.",
       "imageUrl": "",
@@ -111,6 +133,7 @@
       "id": "post-mp7tvnl5-ce90jl",
       "title": "Test Post",
       "createdBy": "Troy Amlee",
+      "createdById": "member-mp7vksx2-8bs752",
       "body": "We went through the Minnehaha Falls today.",
       "createdAt": "2026-05-16T04:10:17.513Z"
     },
@@ -118,6 +141,7 @@
       "id": "post-seed-1",
       "title": "Saturday social rides need clearer regroup points",
       "createdBy": "Amina Yusuf",
+      "createdById": "member-seed-3",
       "body": "The route worked, but new riders had trouble knowing where the first full regroup would happen. Next time we should note two obvious landmarks in the route post so nobody has to guess whether they should keep pushing or soft pedal.",
       "createdAt": "2026-05-13T14:05:00.000Z"
     },
@@ -125,6 +149,7 @@
       "id": "post-seed-2",
       "title": "Rain route fallback for weekday spins",
       "createdBy": "Theo Johnson",
+      "createdById": "member-seed-2",
       "body": "When the streets are slick, the lower-traffic river option is still good, but the club should pin one short fallback loop for commuters who want a predictable thirty to forty minutes without debating conditions in the group chat.",
       "createdAt": "2026-05-12T20:50:00.000Z"
     },
@@ -132,8 +157,99 @@
       "id": "post-seed-3",
       "title": "Volunteer ride for trail cleanup",
       "createdBy": "Marisol Vega",
+      "createdById": "member-seed-1",
       "body": "A ride-to-cleanup format would fit this group well: meet at the bridge, spin to the work site, spend an hour helping out, then head to coffee after. This space can double as the planning board for those kinds of club days.",
       "createdAt": "2026-05-11T15:15:00.000Z"
+    }
+  ],
+  "rides": [
+    {
+      "id": "ride-seed-1",
+      "riderId": "member-seed-1",
+      "routeId": "route-seed-1",
+      "distanceMiles": 16.4,
+      "durationMinutes": 78,
+      "ridenAt": "2026-05-13T06:50:00.000Z"
+    },
+    {
+      "id": "ride-seed-2",
+      "riderId": "member-seed-1",
+      "routeId": "route-seed-1",
+      "distanceMiles": 16.4,
+      "durationMinutes": 74,
+      "ridenAt": "2026-05-09T06:40:00.000Z"
+    },
+    {
+      "id": "ride-seed-3",
+      "riderId": "member-seed-1",
+      "routeId": "route-seed-3",
+      "distanceMiles": 24.8,
+      "durationMinutes": 121,
+      "ridenAt": "2026-05-05T09:10:00.000Z"
+    },
+    {
+      "id": "ride-seed-4",
+      "riderId": "member-seed-2",
+      "routeId": "route-seed-3",
+      "distanceMiles": 24.8,
+      "durationMinutes": 102,
+      "ridenAt": "2026-05-14T17:30:00.000Z"
+    },
+    {
+      "id": "ride-seed-5",
+      "riderId": "member-seed-2",
+      "routeId": "route-seed-3",
+      "distanceMiles": 24.8,
+      "durationMinutes": 99,
+      "ridenAt": "2026-05-08T17:25:00.000Z"
+    },
+    {
+      "id": "ride-seed-6",
+      "riderId": "member-seed-2",
+      "routeId": "route-seed-1",
+      "distanceMiles": 16.4,
+      "durationMinutes": 70,
+      "ridenAt": "2026-05-04T07:05:00.000Z"
+    },
+    {
+      "id": "ride-seed-7",
+      "riderId": "member-seed-3",
+      "routeId": "route-seed-2",
+      "distanceMiles": 11.2,
+      "durationMinutes": 58,
+      "ridenAt": "2026-05-12T17:35:00.000Z"
+    },
+    {
+      "id": "ride-seed-8",
+      "riderId": "member-seed-3",
+      "routeId": "route-seed-2",
+      "distanceMiles": 11.2,
+      "durationMinutes": 61,
+      "ridenAt": "2026-05-06T17:40:00.000Z"
+    },
+    {
+      "id": "ride-seed-9",
+      "riderId": "member-mp7vksx2-8bs752",
+      "routeId": "route-seed-1",
+      "distanceMiles": 16.4,
+      "durationMinutes": 92,
+      "ridenAt": "2026-05-15T08:15:00.000Z"
+    },
+    {
+      "id": "ride-seed-10",
+      "riderId": "member-mp7vksx2-8bs752",
+      "routeId": "route-seed-2",
+      "distanceMiles": 11.2,
+      "durationMinutes": 67,
+      "ridenAt": "2026-05-11T18:00:00.000Z"
+    },
+    {
+      "id": "ride-seed-11",
+      "riderId": "member-mp7vksx2-8bs752",
+      "routeId": "route-seed-1",
+      "distanceMiles": 16.4,
+      "durationMinutes": 88,
+      "ridenAt": "2026-05-07T08:05:00.000Z"
     }
   ]
 }

@@ -24,6 +24,12 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     }),
+  putJson: (path, body) =>
+    request(path, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    }),
   postForm: (path, formData) =>
     request(path, {
       method: "POST",

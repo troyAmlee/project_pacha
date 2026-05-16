@@ -6,6 +6,7 @@ import { useForm } from "../hooks/useForm";
 import { formatDate } from "../utils";
 import FormFeedback from "./FormFeedback";
 import LockedNote from "./LockedNote";
+import RiderLink from "./RiderLink";
 
 const emptyPostForm = {
   title: "",
@@ -84,7 +85,9 @@ export default function Journal() {
           {data.posts.map((post) => (
             <article className="journal-entry" key={post.id}>
               <p className="journal-entry__meta">
-                {post.createdBy} · {formatDate(post.createdAt)}
+                <RiderLink riderId={post.createdById} name={post.createdBy} />
+                {" · "}
+                {formatDate(post.createdAt)}
               </p>
               <h3>{post.title}</h3>
               <p>{post.body}</p>

@@ -108,7 +108,8 @@ app.get(
       routes: sortByCreatedAt(store.routes),
       photos: sortByCreatedAt(store.photos),
       posts: sortByCreatedAt(store.posts),
-      stats: buildStats(store)
+      stats: buildStats(store),
+      metricsByRider: buildMetricsByRider(store)
     });
   })
 );
@@ -134,7 +135,9 @@ app.post(
       passwordHash: await hashPassword(password),
       neighborhood,
       pace,
+      bike: "",
       bio,
+      favoriteRouteIds: [],
       createdAt: new Date().toISOString()
     };
 
@@ -285,6 +288,76 @@ app.post(
   })
 );
 
+app.put(
+  "/api/riders/me",
+  requireAuth,
+  asyncHandler(async (request, response) => {
+    const neighborhood = requireText(request.body.neighborhood, "Neighborhood", { max: 80 });
+    const pace = oneOf(request.body.pace, "Ride pace", PACE_OPTIONS, "steady");
+    const bike = optionalText(request.body.bike, "Bike", { max: 120, fallback: "" });
+    const bio = optionalText(request.body.bio, "Bio", {
+      max: 600,
+      fallback: "Ready to meet the crew and trade route notes."
+    });
+
+    let updatedMember;
+
+    await updateStore((store) => {
+      const member = store.members.find((item) => item.id === request.member.id);
+
+      if (!member) {
+        throw new ValidationError("Your account could not be found.");
+      }
+
+      member.neighborhood = neighborhood;
+      member.pace = pace;
+      member.bike = bike;
+      member.bio = bio;
+      updatedMember = member;
+      return store;
+    });
+
+    response.json({ member: toPrivateMember(updatedMember) });
+  })
+);
+
+app.post(
+  "/api/riders/me/favorites",
+  requireAuth,
+  asyncHandler(async (request, response) => {
+    const routeId = requireText(request.body.routeId, "Route", { max: 120 });
+
+    let updatedMember;
+
+    await updateStore((store) => {
+      if (!store.routes.some((route) => route.id === routeId)) {
+        throw new ValidationError("That route no longer exists.");
+      }
+
+      const member = store.members.find((item) => item.id === request.member.id);
+
+      if (!member) {
+        throw new ValidationError("Your account could not be found.");
+      }
+
+      // Toggle: a second call on the same route removes the favorite.
+      const favorites = new Set(member.favoriteRouteIds ?? []);
+
+      if (favorites.has(routeId)) {
+        favorites.delete(routeId);
+      } else {
+        favorites.add(routeId);
+      }
+
+      member.favoriteRouteIds = [...favorites];
+      updatedMember = member;
+      return store;
+    });
+
+    response.json({ member: toPrivateMember(updatedMember) });
+  })
+);
+
 if (fs.existsSync(clientDistDirectory)) {
   app.use(express.static(clientDistDirectory));
 
@@ -339,6 +412,41 @@ function buildStats(store) {
     photoCount: store.photos.length,
     postCount: store.posts.length,
     milesShared: Number(milesShared.toFixed(1))
+  };
+}
+
+// Profile metrics are always derived from the `rides` log, never stored as
+// counters, so they cannot drift out of sync with the underlying rides.
+function buildMetricsByRider(store) {
+  const ridesByRider = new Map();
+
+  for (const ride of store.rides ?? []) {
+    const bucket = ridesByRider.get(ride.riderId) ?? [];
+    bucket.push(ride);
+    ridesByRider.set(ride.riderId, bucket);
+  }
+
+  const metricsByRider = {};
+
+  for (const member of store.members) {
+    metricsByRider[member.id] = buildRiderMetrics(ridesByRider.get(member.id) ?? []);
+  }
+
+  return metricsByRider;
+}
+
+function buildRiderMetrics(rides) {
+  const milesBiked = rides.reduce((total, ride) => total + Number(ride.distanceMiles || 0), 0);
+  const longestRide = rides.reduce(
+    (longest, ride) => Math.max(longest, Number(ride.distanceMiles || 0)),
+    0
+  );
+
+  return {
+    ridesTaken: rides.length,
+    routesTaken: new Set(rides.map((ride) => ride.routeId)).size,
+    milesBiked: Number(milesBiked.toFixed(1)),
+    longestRideMiles: Number(longestRide.toFixed(1))
   };
 }
 

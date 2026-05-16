@@ -3,9 +3,9 @@ import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
 import { useForm } from "../hooks/useForm";
-import { formatDate, formatMiles } from "../utils";
 import FormFeedback from "./FormFeedback";
 import LockedNote from "./LockedNote";
+import RouteCard from "./RouteCard";
 
 const emptyRouteForm = {
   title: "",
@@ -119,19 +119,7 @@ export default function RouteBoard() {
 
         <div className="stack-list">
           {data.routes.map((route) => (
-            <article className="story-row" key={route.id}>
-              <div className="story-meta">
-                <span>{formatMiles(route.distanceMiles)}</span>
-                <span>{route.start}</span>
-                <span>{route.terrain}</span>
-              </div>
-              <h3>{route.title}</h3>
-              <p>{route.notes}</p>
-              <footer>
-                <span>{route.createdBy}</span>
-                <span>{formatDate(route.createdAt)}</span>
-              </footer>
-            </article>
+            <RouteCard key={route.id} route={route} />
           ))}
         </div>
       </div>
