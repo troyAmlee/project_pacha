@@ -74,6 +74,64 @@
   ],
   "routes": [
     {
+      "id": "route-mpdedehh-zoxxm6",
+      "title": "Northside gravel connector",
+      "createdBy": "Troy Amlee",
+      "createdById": "member-mp7vksx2-8bs752",
+      "distanceMiles": 4.2,
+      "start": "Boom Island Park",
+      "startCoords": [
+        44.9929,
+        -93.2793
+      ],
+      "terrain": "mixed surface",
+      "notes": "Pavement into short gravel stretches. Best when the river trail is dry and the group wants a longer pull.",
+      "path": [
+        [
+          44.9929,
+          -93.2793
+        ],
+        [
+          44.9961,
+          -93.2862
+        ],
+        [
+          45.0017,
+          -93.2915
+        ],
+        [
+          45.0068,
+          -93.2894
+        ],
+        [
+          45.0108,
+          -93.2826
+        ],
+        [
+          45.0123,
+          -93.2741
+        ],
+        [
+          45.007,
+          -93.2665
+        ],
+        [
+          45.0009,
+          -93.2618
+        ],
+        [
+          44.995,
+          -93.2667
+        ],
+        [
+          44.9929,
+          -93.2793
+        ]
+      ],
+      "source": "draw",
+      "createdAt": "2026-05-20T01:42:48.725Z"
+    },
+    {
       "id": "route-mp9j4cv3-yn8m5d",
       "title": "Greenway shakeout to Bde Maka Ska",
       "createdBy": "Troy Amlee",
