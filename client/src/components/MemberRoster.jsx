@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
-import { getInitials, toTitleCase } from "../utils";
+import { toTitleCase } from "../utils";
+import RiderAvatar from "./RiderAvatar";
 import RiderLink from "./RiderLink";
 
 export default function MemberRoster() {
@@ -25,16 +26,16 @@ export default function MemberRoster() {
             <>
               <h3>You are riding with the crew, {member.name}.</h3>
               <p>
-                Your profile is live on the roster. Every route, photo, and journal post you
-                share is credited to you.
+                Your profile is live on the roster. Every route, photo, journal post, group, and
+                ride log is credited to you.
               </p>
             </>
           ) : (
             <>
               <h3>Join the North Star crew.</h3>
               <p>
-                Create a rider profile to share routes, post ride photos, and write in the
-                club journal.
+                Create a rider profile to share routes, post ride photos, join groups, and write in
+                the club journal.
               </p>
               <div className="locked-note__actions">
                 <Link className="button button--primary" to="/signup">
@@ -51,13 +52,13 @@ export default function MemberRoster() {
         <div className="member-rail">
           {data.members.map((rider) => (
             <article className="member-chip" key={rider.id}>
-              <div className="member-avatar">{getInitials(rider.name)}</div>
+              <RiderAvatar className="member-avatar" rider={rider} />
               <div>
                 <h3>
                   <RiderLink riderId={rider.id} name={rider.name} />
                 </h3>
                 <p>
-                  {rider.neighborhood} · {toTitleCase(rider.pace)}
+                  {rider.neighborhood} - {toTitleCase(rider.pace)}
                 </p>
                 <span>{rider.bio}</span>
               </div>

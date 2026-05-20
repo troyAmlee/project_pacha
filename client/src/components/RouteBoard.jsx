@@ -1,46 +1,13 @@
-import { useState } from "react";
-import { api } from "../api";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
-import { useForm } from "../hooks/useForm";
-import FormFeedback from "./FormFeedback";
 import LockedNote from "./LockedNote";
 import RouteCard from "./RouteCard";
-
-const emptyRouteForm = {
-  title: "",
-  distanceMiles: "",
-  start: "",
-  terrain: "city streets",
-  notes: ""
-};
+import SuggestedRoutes from "./SuggestedRoutes";
 
 export default function RouteBoard() {
   const { member } = useAuth();
-  const { data, addItem } = useClubData();
-  const { values, handleChange, reset } = useForm(emptyRouteForm);
-  const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState(null);
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setBusy(true);
-    setFeedback(null);
-
-    try {
-      const payload = await api.postJson("/api/routes", {
-        ...values,
-        distanceMiles: Number(values.distanceMiles)
-      });
-      addItem("routes", payload.route, payload.stats);
-      reset();
-      setFeedback({ type: "success", message: `Route saved: ${payload.route.title}.` });
-    } catch (error) {
-      setFeedback({ type: "error", message: error.message });
-    } finally {
-      setBusy(false);
-    }
-  }
+  const { data } = useClubData();
 
   return (
     <section className="content-section content-section--split" id="routes">
@@ -48,74 +15,40 @@ export default function RouteBoard() {
         <p className="section-kicker">Route board</p>
         <h2>Share the loops people actually ride, not just the ones on a brochure map.</h2>
         <p>
-          Riders can log distance, the best place to start, terrain notes, and local knowledge
-          that helps someone decide whether the route fits their day.
+          Routes now carry geometry, so riders can save a line, open it later in the ride screen,
+          and follow it with live GPS.
         </p>
       </div>
 
       <div className="section-body section-body--split">
-        {member ? (
-          <form className="editor editor--cool" onSubmit={handleSubmit}>
-            <label>
-              Route name
-              <input
-                name="title"
-                value={values.title}
-                onChange={handleChange}
-                placeholder="West River recovery loop"
-                required
-              />
-            </label>
-            <label>
-              Distance in miles
-              <input
-                name="distanceMiles"
-                type="number"
-                min="1"
-                step="0.1"
-                value={values.distanceMiles}
-                onChange={handleChange}
-                placeholder="18.5"
-                required
-              />
-            </label>
-            <label>
-              Start point
-              <input
-                name="start"
-                value={values.start}
-                onChange={handleChange}
-                placeholder="Stone Arch Bridge"
-                required
-              />
-            </label>
-            <label>
-              Terrain
-              <select name="terrain" value={values.terrain} onChange={handleChange}>
-                <option value="city streets">City streets</option>
-                <option value="greenway">Greenway</option>
-                <option value="gravel">Gravel</option>
-                <option value="mixed surface">Mixed surface</option>
-              </select>
-            </label>
-            <label>
-              Ride notes
-              <textarea
-                name="notes"
-                rows="4"
-                value={values.notes}
-                onChange={handleChange}
-                placeholder="Best before 9 a.m. Wind gets real along the river, but the views pay it back."
-              />
-            </label>
-            <button className="button button--primary" type="submit" disabled={busy}>
-              {busy ? "Posting..." : "Share route"}
-            </button>
-            <FormFeedback feedback={feedback} />
-          </form>
-        ) : (
-          <LockedNote action="share a route" />
-        )}
+        <div className="route-workbench">
+          {member ? (
+            <div className="editor editor--cool">
+              <h3>Build routes with geometry.</h3>
+              <p>
+                Draw a route point by point or capture one live with GPS. Every saved route can
+                open in the ride screen later with the line and Greenway guide intact.
+              </p>
+              <div className="locked-note__actions">
+                <Link className="button button--primary" to="/routes/new">
+                  Open route builder
+                </Link>
+                <Link className="button button--outline" to="/groups">
+                  See groups
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <LockedNote action="share a route with map geometry" />
+          )}
+
+          <SuggestedRoutes
+            description="These are the best routes to load first if you are new to the board or just want a dependable ride."
+            member={member}
+            routes={data.routes}
+            title="Club picks"
+          />
+        </div>
 
         <div className="stack-list">
           {data.routes.map((route) => (

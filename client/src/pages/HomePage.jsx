@@ -1,12 +1,17 @@
+import { Link, useLocation } from "react-router-dom";
+import GroupHighlights from "../components/GroupHighlights";
 import Journal from "../components/Journal";
 import MemberRoster from "../components/MemberRoster";
 import PhotoWall from "../components/PhotoWall";
 import RouteBoard from "../components/RouteBoard";
 import TopBar from "../components/TopBar";
+import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
 import { formatMiles } from "../utils";
 
 export default function HomePage() {
+  const location = useLocation();
+  const { member } = useAuth();
   const { data, loading, error, loadBootstrap } = useClubData();
 
   if (loading) {
@@ -35,19 +40,31 @@ export default function HomePage() {
     <div className="app-shell">
       <TopBar />
 
+      {location.state?.success ? (
+        <div className="feedback-strip">
+          <p className="feedback feedback--success">{location.state.success}</p>
+        </div>
+      ) : null}
+
       <section className="hero" id="top">
         <div className="hero-copy">
           <p className="eyebrow">Bike club workspace</p>
-          <h1>Routes, ride photos, and a shared journal for Minneapolis riders.</h1>
+          <h1>Routes, ride photos, groups, and a shared journal for Minneapolis riders.</h1>
           <p className="hero-summary">
-            This MVP gives a bike club one place to gather: riders can join the community, log the
-            loops they trust, upload moments from the saddle, and keep a running blog of what the
-            city feels like on two wheels.
+            The board now runs as an actual club tool: riders join the community, save route lines
+            with geometry, organize into groups, and open a live ride screen when it is time to
+            follow the route.
           </p>
           <div className="hero-actions">
-            <a className="button button--primary" href="#join">
-              Join the club
-            </a>
+            {member ? (
+              <Link className="button button--primary" to="/routes/new">
+                Build a route
+              </Link>
+            ) : (
+              <a className="button button--primary" href="#join">
+                Join the club
+              </a>
+            )}
             <a className="button button--ghost" href="#routes">
               Browse route board
             </a>
@@ -74,18 +91,19 @@ export default function HomePage() {
           <strong>{formatMiles(data.stats.milesShared)}</strong>
         </div>
         <div>
-          <span className="stat-label">Photo drops</span>
-          <strong>{data.stats.photoCount}</strong>
+          <span className="stat-label">Ride groups</span>
+          <strong>{data.stats.groupCount}</strong>
         </div>
         <div>
-          <span className="stat-label">Journal notes</span>
-          <strong>{data.stats.postCount}</strong>
+          <span className="stat-label">Logged rides</span>
+          <strong>{data.stats.rideCount}</strong>
         </div>
       </section>
 
       <main className="workspace">
         <MemberRoster />
         <RouteBoard />
+        <GroupHighlights />
         <PhotoWall />
         <Journal />
       </main>

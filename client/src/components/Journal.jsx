@@ -86,7 +86,7 @@ export default function Journal() {
             <article className="journal-entry" key={post.id}>
               <p className="journal-entry__meta">
                 <RiderLink riderId={post.createdById} name={post.createdBy} />
-                {" · "}
+                {" - "}
                 {formatDate(post.createdAt)}
               </p>
               <h3>{post.title}</h3>

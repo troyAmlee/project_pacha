@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import MetricBand from "../components/MetricBand";
 import ProfileEditForm from "../components/ProfileEditForm";
+import RiderAvatar from "../components/RiderAvatar";
 import RouteCard from "../components/RouteCard";
 import TopBar from "../components/TopBar";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
-import { formatDate, getInitials, toTitleCase } from "../utils";
+import { formatDate, toTitleCase } from "../utils";
 
 export default function RiderProfilePage() {
   const { id } = useParams();
@@ -41,8 +42,6 @@ export default function RiderProfilePage() {
   }
 
   const isOwnProfile = member?.id === rider.id;
-  // Our own favorites come from the live auth copy so a toggle shows instantly;
-  // other riders' favorites come from the roster snapshot.
   const favoriteSource = isOwnProfile ? member : rider;
   const favoriteRouteIds = favoriteSource.favoriteRouteIds ?? [];
 
@@ -50,6 +49,7 @@ export default function RiderProfilePage() {
   const riderRoutes = data.routes.filter((route) => route.createdById === rider.id);
   const riderPhotos = data.photos.filter((photo) => photo.createdById === rider.id);
   const riderPosts = data.posts.filter((post) => post.createdById === rider.id);
+  const riderGroups = data.groups.filter((group) => group.memberIds.includes(rider.id));
   const favoriteRoutes = favoriteRouteIds
     .map((routeId) => data.routes.find((route) => route.id === routeId))
     .filter(Boolean);
@@ -59,7 +59,6 @@ export default function RiderProfilePage() {
 
   async function handleSaved(updated) {
     updateMember(updated);
-    // Refresh the roster so the edited profile is consistent everywhere.
     await loadBootstrap();
     setEditing(false);
   }
@@ -70,13 +69,13 @@ export default function RiderProfilePage() {
 
       <section className="content-section profile-header">
         <div className="profile-id">
-          <div className="profile-avatar">{getInitials(rider.name)}</div>
+          <RiderAvatar className="profile-avatar" rider={rider} />
           <div>
             <p className="section-kicker">Rider profile</p>
             <h1>{rider.name}</h1>
             <p className="profile-meta">
-              {rider.neighborhood} · {toTitleCase(rider.pace)} pace
-              {rider.bike ? ` · ${rider.bike}` : ""}
+              {rider.neighborhood} - {toTitleCase(rider.pace)} pace
+              {rider.bike ? ` - ${rider.bike}` : ""}
             </p>
           </div>
         </div>
@@ -105,6 +104,24 @@ export default function RiderProfilePage() {
       <MetricBand metrics={metrics} />
 
       <main className="workspace">
+        <section className="content-section">
+          <div className="section-heading">
+            <p className="section-kicker">Ride groups</p>
+            <h2>Groups {possessive} ride with right now.</h2>
+          </div>
+          {riderGroups.length ? (
+            <div className="group-inline-list">
+              {riderGroups.map((group) => (
+                <Link className="group-inline-link" key={group.id} to={`/groups/${group.id}`}>
+                  {group.name}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="empty-note">No group memberships yet.</p>
+          )}
+        </section>
+
         <section className="content-section">
           <div className="section-heading">
             <p className="section-kicker">Favorite routes</p>

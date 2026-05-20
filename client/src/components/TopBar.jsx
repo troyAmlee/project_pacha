@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-// `minimal` hides the in-page section nav for routes other than the home page.
 export default function TopBar({ minimal = false }) {
   const { member, logout } = useAuth();
 
@@ -18,6 +17,7 @@ export default function TopBar({ minimal = false }) {
         <nav className="topbar-nav" aria-label="Primary">
           <a href="#join">Roster</a>
           <a href="#routes">Routes</a>
+          <Link to="/groups">Groups</Link>
           <a href="#photos">Photos</a>
           <a href="#journal">Journal</a>
         </nav>
@@ -26,6 +26,9 @@ export default function TopBar({ minimal = false }) {
       <div className="topbar-auth">
         {member ? (
           <>
+            <Link className="button button--outline button--sm" to="/routes/new">
+              New route
+            </Link>
             <Link className="topbar-rider" to={`/riders/${member.id}`}>
               {member.name}
             </Link>

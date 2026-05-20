@@ -2,7 +2,6 @@ import { useState } from "react";
 import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
 
-// Toggles a route in the signed-in rider's favorites. Hidden for guests.
 export default function FavoriteButton({ routeId }) {
   const { member, updateMember } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -34,7 +33,7 @@ export default function FavoriteButton({ routeId }) {
       disabled={busy}
       aria-pressed={isFavorite}
     >
-      {isFavorite ? "★ Favorited" : "☆ Favorite"}
+      {isFavorite ? "Saved route" : "Save route"}
     </button>
   );
 }

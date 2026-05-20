@@ -1,10 +1,10 @@
 // A small validation toolkit. Handlers throw ValidationError and the central
 // error middleware turns it into a clean 400 response.
 export class ValidationError extends Error {
-  constructor(message) {
+  constructor(message, statusCode = 400) {
     super(message);
     this.name = "ValidationError";
-    this.statusCode = 400;
+    this.statusCode = statusCode;
   }
 }
 

@@ -13,8 +13,12 @@
       "neighborhood": "Longfellow",
       "pace": "easy",
       "bike": "",
+      "avatarUrl": "",
       "bio": "The thrill of it.",
       "favoriteRouteIds": [],
+      "groupIds": [
+        "group-seed-1"
+      ],
       "createdAt": "2026-05-16T04:57:51.163Z"
     },
     {
@@ -23,10 +27,15 @@
       "neighborhood": "Longfellow",
       "pace": "steady",
       "bike": "Steel all-road with fenders for year-round river miles",
+      "avatarUrl": "",
       "bio": "Weeknight river loops, bakery stops on Saturdays, and a low tolerance for headwinds without coffee.",
       "favoriteRouteIds": [
         "route-seed-1",
         "route-seed-3"
+      ],
+      "groupIds": [
+        "group-seed-1",
+        "group-seed-2"
       ],
       "createdAt": "2026-05-11T07:15:00.000Z"
     },
@@ -36,9 +45,13 @@
       "neighborhood": "North Loop",
       "pace": "fast",
       "bike": "Carbon endurance bike built for long pulls",
+      "avatarUrl": "",
       "bio": "Commutes year-round and posts route notes every time the pavement changes.",
       "favoriteRouteIds": [
         "route-seed-3"
+      ],
+      "groupIds": [
+        "group-seed-1"
       ],
       "createdAt": "2026-05-10T18:45:00.000Z"
     },
@@ -48,14 +61,222 @@
       "neighborhood": "Powderhorn",
       "pace": "easy",
       "bike": "Aluminum hybrid commuter with wide, forgiving tires",
+      "avatarUrl": "",
       "bio": "Brings new riders into the group and always knows where the calmest trail entry is.",
       "favoriteRouteIds": [
         "route-seed-2"
+      ],
+      "groupIds": [
+        "group-seed-2"
       ],
       "createdAt": "2026-05-09T16:20:00.000Z"
     }
   ],
   "routes": [
+    {
+      "id": "route-mp9j4cv3-yn8m5d",
+      "title": "Greenway shakeout to Bde Maka Ska",
+      "createdBy": "Troy Amlee",
+      "createdById": "member-mp7vksx2-8bs752",
+      "distanceMiles": 6.3,
+      "start": "Midtown Greenway access at 10th Ave",
+      "startCoords": [
+        44.9506,
+        -93.2602
+      ],
+      "terrain": "greenway",
+      "notes": "Great for newer riders. Mostly forgiving pace with an easy lake lap once the group settles in.",
+      "path": [
+        [
+          44.9506,
+          -93.2602
+        ],
+        [
+          44.9489,
+          -93.2696
+        ],
+        [
+          44.9484,
+          -93.2793
+        ],
+        [
+          44.9488,
+          -93.2897
+        ],
+        [
+          44.9464,
+          -93.3005
+        ],
+        [
+          44.944,
+          -93.3092
+        ],
+        [
+          44.9426,
+          -93.3166
+        ],
+        [
+          44.9448,
+          -93.3219
+        ],
+        [
+          44.9476,
+          -93.3171
+        ],
+        [
+          44.9496,
+          -93.3083
+        ],
+        [
+          44.95,
+          -93.298
+        ],
+        [
+          44.9494,
+          -93.2875
+        ],
+        [
+          44.9497,
+          -93.2757
+        ],
+        [
+          44.9506,
+          -93.2602
+        ]
+      ],
+      "source": "draw",
+      "createdAt": "2026-05-17T08:44:40.096Z"
+    },
+    {
+      "id": "route-mp8jmctx-4id3ka",
+      "title": "Freeway test",
+      "createdBy": "Troy Amlee",
+      "createdById": "member-mp7vksx2-8bs752",
+      "distanceMiles": 5.5,
+      "start": "Pacha",
+      "startCoords": [
+        44.936813,
+        -93.338181
+      ],
+      "terrain": "city streets",
+      "notes": "Just a test, the lines skip through streets instead of being flush.",
+      "path": [
+        [
+          44.936813,
+          -93.338181
+        ],
+        [
+          44.937635,
+          -93.351022
+        ],
+        [
+          44.937863,
+          -93.353646
+        ],
+        [
+          44.937993,
+          -93.354111
+        ],
+        [
+          44.938455,
+          -93.353513
+        ],
+        [
+          44.93769,
+          -93.35219
+        ],
+        [
+          44.936682,
+          -93.346609
+        ],
+        [
+          44.93641,
+          -93.346177
+        ],
+        [
+          44.92883,
+          -93.350719
+        ],
+        [
+          44.928158,
+          -93.349511
+        ],
+        [
+          44.927672,
+          -93.349191
+        ],
+        [
+          44.927702,
+          -93.34856
+        ],
+        [
+          44.927174,
+          -93.34834
+        ],
+        [
+          44.919071,
+          -93.350055
+        ],
+        [
+          44.9208,
+          -93.34951
+        ],
+        [
+          44.910095,
+          -93.35191
+        ],
+        [
+          44.90955,
+          -93.352643
+        ],
+        [
+          44.904537,
+          -93.349345
+        ],
+        [
+          44.90472,
+          -93.34879
+        ],
+        [
+          44.895464,
+          -93.349762
+        ],
+        [
+          44.896589,
+          -93.349858
+        ],
+        [
+          44.895356,
+          -93.349704
+        ],
+        [
+          44.888586,
+          -93.352302
+        ],
+        [
+          44.88977,
+          -93.35124
+        ],
+        [
+          44.88871,
+          -93.348801
+        ],
+        [
+          44.88904,
+          -93.347998
+        ],
+        [
+          44.888866,
+          -93.347344
+        ],
+        [
+          44.888439,
+          -93.346988
+        ]
+      ],
+      "source": "record",
+      "createdAt": "2026-05-16T16:10:53.686Z"
+    },
     {
       "id": "route-seed-1",
       "title": "Mississippi sunrise loop",
@@ -63,8 +284,47 @@
       "createdById": "member-seed-1",
       "distanceMiles": 16.4,
       "start": "Stone Arch Bridge",
+      "startCoords": [
+        44.9819,
+        -93.2517
+      ],
       "terrain": "city streets",
       "notes": "Early morning river light, smooth warm-up, and enough turns to keep it interesting without getting hectic.",
+      "path": [
+        [
+          44.9819,
+          -93.2517
+        ],
+        [
+          44.9796,
+          -93.2462
+        ],
+        [
+          44.9757,
+          -93.2414
+        ],
+        [
+          44.9694,
+          -93.2378
+        ],
+        [
+          44.9642,
+          -93.2445
+        ],
+        [
+          44.9679,
+          -93.2534
+        ],
+        [
+          44.9746,
+          -93.2578
+        ],
+        [
+          44.9819,
+          -93.2517
+        ]
+      ],
+      "source": "draw",
       "createdAt": "2026-05-13T06:35:00.000Z"
     },
     {
@@ -74,8 +334,71 @@
       "createdById": "member-seed-3",
       "distanceMiles": 11.2,
       "start": "Midtown Greenway access at 10th Ave",
+      "startCoords": [
+        44.9506,
+        -93.2602
+      ],
       "terrain": "greenway",
       "notes": "Great for newer riders. Mostly forgiving pace with an easy lake lap once the group settles in.",
+      "path": [
+        [
+          44.9506,
+          -93.2602
+        ],
+        [
+          44.9489,
+          -93.2696
+        ],
+        [
+          44.9484,
+          -93.2793
+        ],
+        [
+          44.9488,
+          -93.2897
+        ],
+        [
+          44.9464,
+          -93.3005
+        ],
+        [
+          44.944,
+          -93.3092
+        ],
+        [
+          44.9426,
+          -93.3166
+        ],
+        [
+          44.9448,
+          -93.3219
+        ],
+        [
+          44.9476,
+          -93.3171
+        ],
+        [
+          44.9496,
+          -93.3083
+        ],
+        [
+          44.95,
+          -93.298
+        ],
+        [
+          44.9494,
+          -93.2875
+        ],
+        [
+          44.9497,
+          -93.2757
+        ],
+        [
+          44.9506,
+          -93.2602
+        ]
+      ],
+      "source": "draw",
       "createdAt": "2026-05-12T17:15:00.000Z"
     },
     {
@@ -85,8 +408,55 @@
       "createdById": "member-seed-2",
       "distanceMiles": 24.8,
       "start": "Boom Island Park",
+      "startCoords": [
+        44.9929,
+        -93.2793
+      ],
       "terrain": "mixed surface",
       "notes": "Pavement into short gravel stretches. Best when the river trail is dry and the group wants a longer pull.",
+      "path": [
+        [
+          44.9929,
+          -93.2793
+        ],
+        [
+          44.9961,
+          -93.2862
+        ],
+        [
+          45.0017,
+          -93.2915
+        ],
+        [
+          45.0068,
+          -93.2894
+        ],
+        [
+          45.0108,
+          -93.2826
+        ],
+        [
+          45.0123,
+          -93.2741
+        ],
+        [
+          45.007,
+          -93.2665
+        ],
+        [
+          45.0009,
+          -93.2618
+        ],
+        [
+          44.995,
+          -93.2667
+        ],
+        [
+          44.9929,
+          -93.2793
+        ]
+      ],
+      "source": "draw",
       "createdAt": "2026-05-11T11:05:00.000Z"
     }
   ],
@@ -163,6 +533,14 @@
     }
   ],
   "rides": [
+    {
+      "id": "ride-mp8jmcty-cysq4f",
+      "riderId": "member-mp7vksx2-8bs752",
+      "routeId": "route-mp8jmctx-4id3ka",
+      "distanceMiles": 5.5,
+      "durationMinutes": 8,
+      "ridenAt": "2026-05-16T16:10:53.686Z"
+    },
     {
       "id": "ride-seed-1",
       "riderId": "member-seed-1",
@@ -250,6 +628,41 @@
       "distanceMiles": 16.4,
       "durationMinutes": 88,
       "ridenAt": "2026-05-07T08:05:00.000Z"
+    }
+  ],
+  "groups": [
+    {
+      "id": "group-seed-1",
+      "name": "River Dawns",
+      "description": "Early-morning river riders who like quiet starts, steady pulls, and coffee after the second bridge.",
+      "memberIds": [
+        "member-seed-1",
+        "member-seed-2",
+        "member-mp7vksx2-8bs752"
+      ],
+      "pinnedRouteIds": [
+        "route-seed-1",
+        "route-seed-3",
+        "route-mp9j4cv3-yn8m5d"
+      ],
+      "createdBy": "Marisol Vega",
+      "createdById": "member-seed-1",
+      "createdAt": "2026-05-10T06:15:00.000Z"
+    },
+    {
+      "id": "group-seed-2",
+      "name": "Greenway Welcome Crew",
+      "description": "A relaxed group for newer riders, social spins, and routes that stay approachable even when the weather changes.",
+      "memberIds": [
+        "member-seed-1",
+        "member-seed-3"
+      ],
+      "pinnedRouteIds": [
+        "route-seed-2"
+      ],
+      "createdBy": "Amina Yusuf",
+      "createdById": "member-seed-3",
+      "createdAt": "2026-05-09T18:45:00.000Z"
     }
   ]
 }

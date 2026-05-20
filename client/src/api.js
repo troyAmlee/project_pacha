@@ -30,9 +30,25 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     }),
+  delete: (path) =>
+    request(path, {
+      method: "DELETE"
+    }),
   postForm: (path, formData) =>
     request(path, {
       method: "POST",
       body: formData
+    }),
+  routePath: (points, profile = "bike") =>
+    request("/api/navigation/route", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ points, profile })
+    }),
+  matchPath: (points, profile = "bike") =>
+    request("/api/navigation/match", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ points, profile })
     })
 };

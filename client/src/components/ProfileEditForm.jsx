@@ -3,12 +3,12 @@ import { api } from "../api";
 import { useForm } from "../hooks/useForm";
 import FormFeedback from "./FormFeedback";
 
-// Inline editor shown on a rider's own profile.
 export default function ProfileEditForm({ member, onSaved, onCancel }) {
   const { values, handleChange } = useForm({
     neighborhood: member.neighborhood ?? "",
     pace: member.pace ?? "steady",
     bike: member.bike ?? "",
+    avatarUrl: member.avatarUrl ?? "",
     bio: member.bio ?? ""
   });
   const [busy, setBusy] = useState(false);
@@ -55,6 +55,15 @@ export default function ProfileEditForm({ member, onSaved, onCancel }) {
           value={values.bike}
           onChange={handleChange}
           placeholder="Steel all-road with fenders"
+        />
+      </label>
+      <label>
+        Avatar URL
+        <input
+          name="avatarUrl"
+          value={values.avatarUrl}
+          onChange={handleChange}
+          placeholder="https://example.com/rider.jpg"
         />
       </label>
       <label>

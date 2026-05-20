@@ -30,6 +30,20 @@ npm start
 
 The backend serves the built frontend when `client/dist` exists.
 
+## Routing Provider
+
+The ride screen uses a server-side routing proxy so the client can draw bike-aware road geometry instead of only connecting saved GPS points. Valhalla is the default provider because it supports bicycle costing, turn-by-turn geometry, and map matching for recorded traces. OSRM remains available as a fallback or alternate provider.
+
+```bash
+ROUTING_PROVIDER=valhalla
+VALHALLA_BASE_URL=https://valhalla1.openstreetmap.de
+OSRM_BASE_URL=https://router.project-osrm.org
+OSRM_BIKE_PROFILE=bike
+ROUTING_TIMEOUT_MS=7000
+```
+
+For production use, prefer a self-hosted Valhalla/OSRM instance or a managed routing provider with clear usage limits. The public defaults are suitable for local prototyping.
+
 ## MVP Features
 
 - Join the club with a rider profile

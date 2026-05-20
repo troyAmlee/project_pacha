@@ -16,6 +16,7 @@ import {
   toPublicMember,
   verifyPassword
 } from "./lib/auth.js";
+import { pathDistanceMiles, requireCoordinate, requirePath } from "./lib/geo.js";
 import { createId, readStore, updateStore } from "./lib/store.js";
 import {
   ValidationError,
@@ -33,8 +34,19 @@ const uploadsDirectory = path.resolve(__dirname, "uploads");
 const clientDistDirectory = path.resolve(__dirname, "..", "client", "dist");
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const MAX_ROUTE_POINTS = 8000;
+const MAX_ROUTING_POINTS = 50;
+const MAX_MATCHING_POINTS = 200;
+const ROUTING_PROVIDER = process.env.ROUTING_PROVIDER || "valhalla";
+const VALHALLA_BASE_URL = process.env.VALHALLA_BASE_URL || "https://valhalla1.openstreetmap.de";
+const OSRM_BASE_URL = process.env.OSRM_BASE_URL || "https://router.project-osrm.org";
+const OSRM_BIKE_PROFILE = process.env.OSRM_BIKE_PROFILE || "bike";
+const ROUTING_TIMEOUT_MS = getEnvNumber("ROUTING_TIMEOUT_MS", 7000);
 const PACE_OPTIONS = ["easy", "steady", "fast"];
 const TERRAIN_OPTIONS = ["city streets", "greenway", "gravel", "mixed surface"];
+const ROUTE_CREATION_MODES = ["draw", "record"];
+const ROUTING_PROFILE_OPTIONS = ["bike", "car", "foot", "driving"];
+const ROUTING_PROVIDER_OPTIONS = ["valhalla", "osrm"];
 
 const app = express();
 const upload = multer({
@@ -47,17 +59,15 @@ const upload = multer({
   }),
   limits: { fileSize: MAX_UPLOAD_BYTES },
   fileFilter: (_request, file, callback) => {
-    // The client `accept` attribute is only a hint; enforce the type here.
     callback(null, /^image\/(png|jpe?g|gif|webp|avif)$/.test(file.mimetype));
   }
 });
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser(sessionSecret));
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "4mb" }));
 app.use("/uploads", express.static(uploadsDirectory));
 
-// Throttle credential endpoints to blunt brute-force and signup spam.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 30,
@@ -102,15 +112,7 @@ app.get(
   asyncHandler(async (_request, response) => {
     const store = await readStore();
 
-    response.json({
-      club: store.club,
-      members: sortByCreatedAt(store.members).map(toPublicMember),
-      routes: sortByCreatedAt(store.routes),
-      photos: sortByCreatedAt(store.photos),
-      posts: sortByCreatedAt(store.posts),
-      stats: buildStats(store),
-      metricsByRider: buildMetricsByRider(store)
-    });
+    response.json(buildBootstrapPayload(store));
   })
 );
 
@@ -136,8 +138,10 @@ app.post(
       neighborhood,
       pace,
       bike: "",
+      avatarUrl: "",
       bio,
       favoriteRouteIds: [],
+      groupIds: [],
       createdAt: new Date().toISOString()
     };
 
@@ -203,29 +207,279 @@ app.post(
   "/api/routes",
   requireAuth,
   asyncHandler(async (request, response) => {
+    const pathPoints = requirePath(request.body.path, "Route path", {
+      minPoints: 2,
+      maxPoints: MAX_ROUTE_POINTS
+    });
+    const startCoords = requireCoordinate(request.body.startCoords ?? pathPoints[0], "Start point");
+    const creationMode = oneOf(
+      request.body.mode,
+      "Route creation mode",
+      ROUTE_CREATION_MODES,
+      "draw"
+    );
+    const logRide = request.body.logRide === true;
+
     const route = {
       id: createId("route"),
       title: requireText(request.body.title, "Route name", { max: 120 }),
       createdBy: request.member.name,
       createdById: request.member.id,
-      distanceMiles: Number(
-        requirePositiveNumber(request.body.distanceMiles, "Distance").toFixed(1)
-      ),
-      start: requireText(request.body.start, "Start point", { max: 140 }),
+      distanceMiles: pathDistanceMiles(pathPoints),
+      start: requireText(request.body.start, "Start point label", { max: 140 }),
+      startCoords,
       terrain: oneOf(request.body.terrain, "Terrain", TERRAIN_OPTIONS, "city streets"),
       notes: optionalText(request.body.notes, "Ride notes", {
         max: 1000,
         fallback: "Local route note coming soon."
       }),
+      path: pathPoints,
+      source: creationMode,
       createdAt: new Date().toISOString()
     };
 
+    if (!route.distanceMiles) {
+      throw new ValidationError("Route path must cover some distance before you can save it.");
+    }
+
+    let ride = null;
+
+    if (logRide) {
+      const rideDurationMinutes = Math.max(
+        1,
+        Math.round(requirePositiveNumber(request.body.rideDurationMinutes, "Ride duration"))
+      );
+
+      ride = {
+        id: createId("ride"),
+        riderId: request.member.id,
+        routeId: route.id,
+        distanceMiles: route.distanceMiles,
+        durationMinutes: rideDurationMinutes,
+        ridenAt: new Date().toISOString()
+      };
+    }
+
     const nextStore = await updateStore((store) => {
       store.routes.unshift(route);
+
+      if (!Array.isArray(store.rides)) {
+        store.rides = [];
+      }
+
+      if (ride) {
+        store.rides.unshift(ride);
+      }
+
       return store;
     });
 
-    response.status(201).json({ route, stats: buildStats(nextStore) });
+    response.status(201).json({
+      route,
+      ride,
+      stats: buildStats(nextStore),
+      metricsByRider: buildMetricsByRider(nextStore)
+    });
+  })
+);
+
+app.put(
+  "/api/routes/:id",
+  requireAuth,
+  asyncHandler(async (request, response) => {
+    const pathPoints = requirePath(request.body.path, "Route path", {
+      minPoints: 2,
+      maxPoints: MAX_ROUTE_POINTS
+    });
+    const startCoords = requireCoordinate(request.body.startCoords ?? pathPoints[0], "Start point");
+    const creationMode = request.body.mode
+      ? oneOf(request.body.mode, "Route creation mode", ROUTE_CREATION_MODES, "draw")
+      : null;
+    let updatedRoute;
+
+    const nextStore = await updateStore((store) => {
+      const route = store.routes.find((item) => item.id === request.params.id);
+
+      if (!route) {
+        throw new ValidationError("That route could not be found.");
+      }
+
+      if (route.createdById !== request.member.id) {
+        throw new ValidationError("You can only edit routes that you created.", 403);
+      }
+
+      route.title = requireText(request.body.title, "Route name", { max: 120 });
+      route.distanceMiles = pathDistanceMiles(pathPoints);
+      route.start = requireText(request.body.start, "Start point label", { max: 140 });
+      route.startCoords = startCoords;
+      route.terrain = oneOf(request.body.terrain, "Terrain", TERRAIN_OPTIONS, "city streets");
+      route.notes = optionalText(request.body.notes, "Ride notes", {
+        max: 1000,
+        fallback: "Local route note coming soon."
+      });
+      route.path = pathPoints;
+      route.source = creationMode ?? route.source ?? "draw";
+      route.updatedAt = new Date().toISOString();
+
+      if (!route.distanceMiles) {
+        throw new ValidationError("Route path must cover some distance before you can save it.");
+      }
+
+      updatedRoute = route;
+      return store;
+    });
+
+    response.json({
+      route: updatedRoute,
+      stats: buildStats(nextStore),
+      metricsByRider: buildMetricsByRider(nextStore)
+    });
+  })
+);
+
+app.delete(
+  "/api/routes/:id",
+  requireAuth,
+  asyncHandler(async (request, response) => {
+    const routeId = request.params.id;
+
+    const nextStore = await updateStore((store) => {
+      const routeIndex = store.routes.findIndex((item) => item.id === routeId);
+
+      if (routeIndex === -1) {
+        throw new ValidationError("That route could not be found.");
+      }
+
+      const route = store.routes[routeIndex];
+
+      if (route.createdById !== request.member.id) {
+        throw new ValidationError("You can only delete routes that you created.", 403);
+      }
+
+      store.routes.splice(routeIndex, 1);
+
+      for (const member of store.members) {
+        member.favoriteRouteIds = (member.favoriteRouteIds ?? []).filter((id) => id !== routeId);
+      }
+
+      for (const group of store.groups ?? []) {
+        group.pinnedRouteIds = (group.pinnedRouteIds ?? []).filter((id) => id !== routeId);
+      }
+
+      return store;
+    });
+
+    response.json({
+      deletedRouteId: routeId,
+      stats: buildStats(nextStore),
+      metricsByRider: buildMetricsByRider(nextStore)
+    });
+  })
+);
+
+app.post(
+  "/api/rides",
+  requireAuth,
+  asyncHandler(async (request, response) => {
+    const routeId = requireText(request.body.routeId, "Route", { max: 120 });
+    const durationMinutes = Math.max(
+      1,
+      Math.round(requirePositiveNumber(request.body.durationMinutes, "Ride duration"))
+    );
+    const store = await readStore();
+    const route = store.routes.find((item) => item.id === routeId);
+
+    if (!route) {
+      response.status(404).json({ error: "That route no longer exists." });
+      return;
+    }
+
+    const distanceMiles =
+      typeof request.body.distanceMiles === "number"
+        ? Number(requirePositiveNumber(request.body.distanceMiles, "Ride distance").toFixed(1))
+        : Number(route.distanceMiles || pathDistanceMiles(route.path)).toFixed(1);
+
+    const ride = {
+      id: createId("ride"),
+      riderId: request.member.id,
+      routeId: route.id,
+      distanceMiles: Number(distanceMiles),
+      durationMinutes,
+      ridenAt: new Date().toISOString()
+    };
+
+    const nextStore = await updateStore((current) => {
+      if (!Array.isArray(current.rides)) {
+        current.rides = [];
+      }
+
+      current.rides.unshift(ride);
+      return current;
+    });
+
+    response.status(201).json({
+      ride,
+      stats: buildStats(nextStore),
+      metricsByRider: buildMetricsByRider(nextStore)
+    });
+  })
+);
+
+app.post(
+  "/api/navigation/route",
+  requireAuth,
+  asyncHandler(async (request, response) => {
+    const routingPoints = requirePath(request.body.points, "Routing points", {
+      minPoints: 2,
+      maxPoints: MAX_ROUTING_POINTS
+    });
+    const profile = oneOf(
+      request.body.profile,
+      "Routing profile",
+      ROUTING_PROFILE_OPTIONS,
+      "bike"
+    );
+
+    try {
+      const routedPath = await fetchRoutedPath(routingPoints, profile);
+      response.json(routedPath);
+    } catch (error) {
+      response.status(502).json({
+        error:
+          error instanceof Error
+            ? error.message
+            : "Routing service is unavailable. Falling back to the saved route line."
+      });
+    }
+  })
+);
+
+app.post(
+  "/api/navigation/match",
+  requireAuth,
+  asyncHandler(async (request, response) => {
+    const tracePoints = requirePath(request.body.points, "GPS trace", {
+      minPoints: 2,
+      maxPoints: MAX_MATCHING_POINTS
+    });
+    const profile = oneOf(
+      request.body.profile,
+      "Routing profile",
+      ROUTING_PROFILE_OPTIONS,
+      "bike"
+    );
+
+    try {
+      const matchedPath = await fetchMatchedPath(tracePoints, profile);
+      response.json(matchedPath);
+    } catch (error) {
+      response.status(502).json({
+        error:
+          error instanceof Error
+            ? error.message
+            : "Map matching is unavailable. Falling back to the raw GPS line."
+      });
+    }
   })
 );
 
@@ -259,7 +513,6 @@ app.post(
 
       response.status(201).json({ photo, stats: buildStats(nextStore) });
     } catch (error) {
-      // The request never persisted, so discard the orphaned upload.
       await cleanupUpload(request.file?.path);
       throw error;
     }
@@ -295,6 +548,10 @@ app.put(
     const neighborhood = requireText(request.body.neighborhood, "Neighborhood", { max: 80 });
     const pace = oneOf(request.body.pace, "Ride pace", PACE_OPTIONS, "steady");
     const bike = optionalText(request.body.bike, "Bike", { max: 120, fallback: "" });
+    const avatarUrl = optionalText(request.body.avatarUrl, "Avatar URL", {
+      max: 400,
+      fallback: ""
+    });
     const bio = optionalText(request.body.bio, "Bio", {
       max: 600,
       fallback: "Ready to meet the crew and trade route notes."
@@ -312,6 +569,7 @@ app.put(
       member.neighborhood = neighborhood;
       member.pace = pace;
       member.bike = bike;
+      member.avatarUrl = avatarUrl;
       member.bio = bio;
       updatedMember = member;
       return store;
@@ -340,7 +598,6 @@ app.post(
         throw new ValidationError("Your account could not be found.");
       }
 
-      // Toggle: a second call on the same route removes the favorite.
       const favorites = new Set(member.favoriteRouteIds ?? []);
 
       if (favorites.has(routeId)) {
@@ -358,6 +615,130 @@ app.post(
   })
 );
 
+app.get(
+  "/api/groups",
+  asyncHandler(async (_request, response) => {
+    const store = await readStore();
+    response.json({ groups: sortByCreatedAt(store.groups ?? []) });
+  })
+);
+
+app.get(
+  "/api/groups/:id",
+  asyncHandler(async (request, response) => {
+    const store = await readStore();
+    const group = (store.groups ?? []).find((item) => item.id === request.params.id);
+
+    if (!group) {
+      response.status(404).json({ error: "That group could not be found." });
+      return;
+    }
+
+    response.json({ group });
+  })
+);
+
+app.post(
+  "/api/groups",
+  requireAuth,
+  asyncHandler(async (request, response) => {
+    const group = {
+      id: createId("group"),
+      name: requireText(request.body.name, "Group name", { max: 100 }),
+      description: requireText(request.body.description, "Group description", { max: 900 }),
+      memberIds: [request.member.id],
+      pinnedRouteIds: [],
+      createdBy: request.member.name,
+      createdById: request.member.id,
+      createdAt: new Date().toISOString()
+    };
+
+    let updatedMember;
+
+    const nextStore = await updateStore((store) => {
+      if (!Array.isArray(store.groups)) {
+        store.groups = [];
+      }
+
+      store.groups.unshift(group);
+      syncMemberGroupIds(store);
+      updatedMember = store.members.find((item) => item.id === request.member.id);
+      return store;
+    });
+
+    response.status(201).json({
+      group,
+      member: toPrivateMember(updatedMember),
+      stats: buildStats(nextStore)
+    });
+  })
+);
+
+app.post(
+  "/api/groups/:id/join",
+  requireAuth,
+  asyncHandler(async (request, response) => {
+    let updatedGroup;
+    let updatedMember;
+
+    const nextStore = await updateStore((store) => {
+      const group = (store.groups ?? []).find((item) => item.id === request.params.id);
+
+      if (!group) {
+        throw new ValidationError("That group could not be found.");
+      }
+
+      const memberIds = new Set(group.memberIds ?? []);
+      memberIds.add(request.member.id);
+      group.memberIds = [...memberIds];
+      updatedGroup = group;
+
+      syncMemberGroupIds(store);
+      updatedMember = store.members.find((item) => item.id === request.member.id);
+      return store;
+    });
+
+    response.json({
+      group: updatedGroup,
+      member: toPrivateMember(updatedMember),
+      stats: buildStats(nextStore)
+    });
+  })
+);
+
+app.post(
+  "/api/groups/:id/routes",
+  requireAuth,
+  asyncHandler(async (request, response) => {
+    const routeId = requireText(request.body.routeId, "Route", { max: 120 });
+    let updatedGroup;
+
+    await updateStore((store) => {
+      const group = (store.groups ?? []).find((item) => item.id === request.params.id);
+
+      if (!group) {
+        throw new ValidationError("That group could not be found.");
+      }
+
+      if (!(group.memberIds ?? []).includes(request.member.id)) {
+        throw new ValidationError("Join the group before pinning routes to it.");
+      }
+
+      if (!store.routes.some((route) => route.id === routeId)) {
+        throw new ValidationError("That route no longer exists.");
+      }
+
+      const pinnedRouteIds = new Set(group.pinnedRouteIds ?? []);
+      pinnedRouteIds.add(routeId);
+      group.pinnedRouteIds = [...pinnedRouteIds];
+      updatedGroup = group;
+      return store;
+    });
+
+    response.json({ group: updatedGroup });
+  })
+);
+
 if (fs.existsSync(clientDistDirectory)) {
   app.use(express.static(clientDistDirectory));
 
@@ -371,7 +752,6 @@ if (fs.existsSync(clientDistDirectory)) {
   });
 }
 
-// Central error handler: turns known failures into clean JSON responses.
 app.use((error, _request, response, _next) => {
   if (error instanceof multer.MulterError) {
     const message =
@@ -397,6 +777,19 @@ app.listen(port, () => {
   console.log(`North Star Ridebook server running on port ${port}`);
 });
 
+function buildBootstrapPayload(store) {
+  return {
+    club: store.club,
+    members: sortByCreatedAt(store.members).map(toPublicMember),
+    routes: sortByCreatedAt(store.routes),
+    photos: sortByCreatedAt(store.photos),
+    posts: sortByCreatedAt(store.posts),
+    groups: sortByCreatedAt(store.groups ?? []),
+    stats: buildStats(store),
+    metricsByRider: buildMetricsByRider(store)
+  };
+}
+
 function sortByCreatedAt(items) {
   return [...items].sort((left, right) => {
     return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
@@ -411,12 +804,12 @@ function buildStats(store) {
     routeCount: store.routes.length,
     photoCount: store.photos.length,
     postCount: store.posts.length,
+    rideCount: (store.rides ?? []).length,
+    groupCount: (store.groups ?? []).length,
     milesShared: Number(milesShared.toFixed(1))
   };
 }
 
-// Profile metrics are always derived from the `rides` log, never stored as
-// counters, so they cannot drift out of sync with the underlying rides.
 function buildMetricsByRider(store) {
   const ridesByRider = new Map();
 
@@ -448,6 +841,353 @@ function buildRiderMetrics(rides) {
     milesBiked: Number(milesBiked.toFixed(1)),
     longestRideMiles: Number(longestRide.toFixed(1))
   };
+}
+
+async function fetchRoutedPath(points, profile) {
+  const primaryProvider = normalizeRoutingProvider(ROUTING_PROVIDER);
+  const providerOrder =
+    primaryProvider === "osrm" ? ["osrm", "valhalla"] : ["valhalla", "osrm"];
+  const providerErrors = [];
+
+  for (const provider of providerOrder) {
+    try {
+      return provider === "valhalla"
+        ? await fetchValhallaRoute(points, profile)
+        : await fetchOsrmRoute(points, profile);
+    } catch (error) {
+      providerErrors.push(
+        `${provider}: ${error instanceof Error ? error.message : "routing request failed"}`
+      );
+    }
+  }
+
+  throw new Error(`Routing providers are unavailable (${providerErrors.join("; ")}).`);
+}
+
+async function fetchMatchedPath(points, profile) {
+  const primaryProvider = normalizeRoutingProvider(ROUTING_PROVIDER);
+  const providerOrder =
+    primaryProvider === "osrm" ? ["osrm", "valhalla"] : ["valhalla", "osrm"];
+  const providerErrors = [];
+
+  for (const provider of providerOrder) {
+    try {
+      return provider === "valhalla"
+        ? await fetchValhallaTraceRoute(points, profile)
+        : await fetchOsrmMatch(points, profile);
+    } catch (error) {
+      providerErrors.push(
+        `${provider}: ${error instanceof Error ? error.message : "map matching request failed"}`
+      );
+    }
+  }
+
+  throw new Error(`Map matching providers are unavailable (${providerErrors.join("; ")}).`);
+}
+
+async function fetchValhallaRoute(points, profile) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ROUTING_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(buildValhallaRouteUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildValhallaRouteBody(points, profile)),
+      signal: controller.signal
+    });
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok || !payload?.routes?.[0]) {
+      throw new Error(payload?.message || payload?.error || "Valhalla could not calculate that path.");
+    }
+
+    return normalizeOsrmRoute(payload.routes[0], profile, "valhalla");
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function fetchValhallaTraceRoute(points, profile) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ROUTING_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(buildValhallaTraceRouteUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildValhallaTraceRouteBody(points, profile)),
+      signal: controller.signal
+    });
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok || !payload?.matchings?.[0]) {
+      throw new Error(payload?.message || payload?.error || "Valhalla could not match that trace.");
+    }
+
+    return normalizeOsrmRoute(payload.matchings[0], profile, "valhalla");
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function fetchOsrmRoute(points, profile) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ROUTING_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(buildOsrmRouteUrl(points, profile), {
+      signal: controller.signal
+    });
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok || payload?.code !== "Ok" || !payload.routes?.[0]) {
+      throw new Error(payload?.message || "Routing service could not calculate that path.");
+    }
+
+    return normalizeOsrmRoute(payload.routes[0], profile, "osrm");
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function fetchOsrmMatch(points, profile) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ROUTING_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(buildOsrmMatchUrl(points, profile), {
+      signal: controller.signal
+    });
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok || payload?.code !== "Ok" || !payload.matchings?.[0]) {
+      throw new Error(payload?.message || "OSRM could not match that trace.");
+    }
+
+    return normalizeOsrmRoute(payload.matchings[0], profile, "osrm");
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function buildValhallaRouteUrl() {
+  return new URL(
+    "/route",
+    VALHALLA_BASE_URL.endsWith("/") ? VALHALLA_BASE_URL : `${VALHALLA_BASE_URL}/`
+  );
+}
+
+function buildValhallaTraceRouteUrl() {
+  return new URL(
+    "/trace_route",
+    VALHALLA_BASE_URL.endsWith("/") ? VALHALLA_BASE_URL : `${VALHALLA_BASE_URL}/`
+  );
+}
+
+function buildValhallaRouteBody(points, profile) {
+  const costing = toValhallaCosting(profile);
+  const body = {
+    locations: points.map(([lat, lng], index) => ({
+      lat: Number(lat.toFixed(6)),
+      lon: Number(lng.toFixed(6)),
+      type: index === 0 || index === points.length - 1 ? "break" : "through"
+    })),
+    costing,
+    units: "miles",
+    format: "osrm",
+    shape_format: "geojson",
+    banner_instructions: true,
+    voice_instructions: true
+  };
+
+  if (costing === "bicycle") {
+    body.costing_options = {
+      bicycle: {
+        use_roads: 0.35,
+        use_hills: 0.35,
+        avoid_bad_surfaces: 0.25
+      }
+    };
+  }
+
+  return body;
+}
+
+function buildValhallaTraceRouteBody(points, profile) {
+  const body = buildValhallaRouteBody(points, profile);
+
+  body.shape = body.locations.map((location, index) => ({
+    lat: location.lat,
+    lon: location.lon,
+    type: index === 0 || index === body.locations.length - 1 ? "break" : "via"
+  }));
+  delete body.locations;
+  body.shape_match = "map_snap";
+
+  return body;
+}
+
+function buildOsrmRouteUrl(points, profile) {
+  const coordinates = points
+    .map(([lat, lng]) => `${lng.toFixed(6)},${lat.toFixed(6)}`)
+    .join(";");
+  const url = new URL(
+    `/route/v1/${toOsrmProfile(profile)}/${coordinates}`,
+    OSRM_BASE_URL.endsWith("/") ? OSRM_BASE_URL : `${OSRM_BASE_URL}/`
+  );
+
+  url.searchParams.set("alternatives", "false");
+  url.searchParams.set("geometries", "geojson");
+  url.searchParams.set("overview", "full");
+  url.searchParams.set("steps", "true");
+  url.searchParams.set("generate_hints", "false");
+
+  return url;
+}
+
+function buildOsrmMatchUrl(points, profile) {
+  const coordinates = points
+    .map(([lat, lng]) => `${lng.toFixed(6)},${lat.toFixed(6)}`)
+    .join(";");
+  const url = new URL(
+    `/match/v1/${toOsrmProfile(profile)}/${coordinates}`,
+    OSRM_BASE_URL.endsWith("/") ? OSRM_BASE_URL : `${OSRM_BASE_URL}/`
+  );
+
+  url.searchParams.set("geometries", "geojson");
+  url.searchParams.set("overview", "full");
+  url.searchParams.set("steps", "true");
+  url.searchParams.set("generate_hints", "false");
+
+  return url;
+}
+
+function normalizeOsrmRoute(route, profile, source) {
+  const path = (route.geometry?.coordinates ?? []).map(([lng, lat]) => [
+    Number(lat.toFixed(6)),
+    Number(lng.toFixed(6))
+  ]);
+
+  return {
+    source,
+    profile,
+    path,
+    distanceMiles: Number(metersToMiles(route.distance || 0).toFixed(2)),
+    durationMinutes: Math.max(1, Math.round(Number(route.duration || 0) / 60)),
+    steps: (route.legs ?? []).flatMap((leg) =>
+      (leg.steps ?? []).map((step) => {
+        const [lng, lat] = step.maneuver?.location ?? [];
+
+        return {
+          distanceMiles: Number(metersToMiles(step.distance || 0).toFixed(2)),
+          durationMinutes: Math.max(1, Math.round(Number(step.duration || 0) / 60)),
+          instruction: buildStepInstruction(step),
+          location:
+            Number.isFinite(lat) && Number.isFinite(lng)
+              ? [Number(lat.toFixed(6)), Number(lng.toFixed(6))]
+              : null,
+          modifier: step.maneuver?.modifier ?? "",
+          name: step.name ?? "",
+          type: step.maneuver?.type ?? "",
+          voiceInstruction: buildStepVoiceInstruction(step)
+        };
+      })
+    )
+  };
+}
+
+function normalizeRoutingProvider(value) {
+  const provider = String(value || "").toLowerCase();
+  return ROUTING_PROVIDER_OPTIONS.includes(provider) ? provider : "valhalla";
+}
+
+function toValhallaCosting(profile) {
+  if (profile === "foot") {
+    return "pedestrian";
+  }
+
+  if (profile === "car" || profile === "driving") {
+    return "auto";
+  }
+
+  return "bicycle";
+}
+
+function toOsrmProfile(profile) {
+  if (profile === "foot") {
+    return "foot";
+  }
+
+  if (profile === "car" || profile === "driving") {
+    return "driving";
+  }
+
+  return OSRM_BIKE_PROFILE;
+}
+
+function buildStepInstruction(step) {
+  const modifier = step.maneuver?.modifier;
+  const type = step.maneuver?.type;
+  const roadName = step.name ? ` onto ${step.name}` : "";
+
+  if (step.maneuver?.instruction) {
+    return step.maneuver.instruction;
+  }
+
+  if (type === "arrive") {
+    return "Arrive at destination";
+  }
+
+  if (type === "depart") {
+    return `Start${roadName}`;
+  }
+
+  if (modifier) {
+    return `${toInstructionVerb(modifier)}${roadName}`;
+  }
+
+  return roadName ? `Continue${roadName}` : "Continue";
+}
+
+function buildStepVoiceInstruction(step) {
+  return (
+    step.voiceInstructions?.[0]?.announcement ||
+    step.maneuver?.instruction ||
+    buildStepInstruction(step)
+  );
+}
+
+function toInstructionVerb(modifier) {
+  return modifier
+    .split(" ")
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function metersToMiles(value) {
+  return Number(value) / 1609.344;
+}
+
+function getEnvNumber(name, fallback) {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function syncMemberGroupIds(store) {
+  const membershipsByMember = new Map();
+
+  for (const group of store.groups ?? []) {
+    for (const memberId of group.memberIds ?? []) {
+      const memberships = membershipsByMember.get(memberId) ?? [];
+      memberships.push(group.id);
+      membershipsByMember.set(memberId, memberships);
+    }
+  }
+
+  for (const member of store.members) {
+    member.groupIds = membershipsByMember.get(member.id) ?? [];
+  }
 }
 
 async function cleanupUpload(filePath) {

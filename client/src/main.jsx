@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import { ClubDataProvider } from "./context/ClubDataContext";
+import "leaflet/dist/leaflet.css";
 import "./styles.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
