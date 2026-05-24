@@ -44,6 +44,17 @@ ROUTING_TIMEOUT_MS=7000
 
 For production use, prefer a self-hosted Valhalla/OSRM instance or a managed routing provider with clear usage limits. The public defaults are suitable for local prototyping.
 
+## Map Rendering
+
+The client renders raster tiles through React Leaflet. Mapbox is the preferred visual provider; OpenStreetMap and CARTO Voyager tiles are used as a fallback if Mapbox is not configured. To enable Mapbox, set both client env vars before `npm run dev` or `npm run build`:
+
+```bash
+VITE_MAPBOX_TOKEN=pk.your_public_mapbox_token
+VITE_MAPBOX_STYLE_URL=mapbox://styles/mapbox/streets-v12
+```
+
+Only the public Mapbox token should reach the browser. Server-side routing keys must stay in the server environment.
+
 ## MVP Features
 
 - Join the club with a rider profile

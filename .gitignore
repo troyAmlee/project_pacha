@@ -3,3 +3,6 @@ client/dist/
 server/uploads/*
 !server/uploads/.gitkeep
 npm-debug.log*
+.env
+.env.local
+.env.*.local
