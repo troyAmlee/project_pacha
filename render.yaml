@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: xxica
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: VITE_MAPBOX_TOKEN
+        sync: false
+      - key: VITE_MAPBOX_STYLE_URL
+        value: mapbox://styles/mapbox/streets-v12

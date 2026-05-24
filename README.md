@@ -55,6 +55,30 @@ VITE_MAPBOX_STYLE_URL=mapbox://styles/mapbox/streets-v12
 
 Only the public Mapbox token should reach the browser. Server-side routing keys must stay in the server environment.
 
+## Deploy to Render (xxica.com)
+
+The repo includes a `render.yaml` Blueprint so the production service can be created without clicking through dashboard fields.
+
+1. Push the latest `main` to GitHub.
+2. In Render, click **New > Blueprint** and select this repo. Render reads `render.yaml`, creates a Free Web Service called `xxica`, and generates a strong `SESSION_SECRET` automatically.
+3. Open the service > **Environment** and set:
+   - `VITE_MAPBOX_TOKEN` = your `pk.` Mapbox token
+   - `VITE_MAPBOX_STYLE_URL` (optional) = a style URL other than the `mapbox/streets-v12` default
+
+   The app will deploy and run even without these (it falls back to OpenStreetMap tiles), but you want Mapbox styling.
+4. Trigger **Manual Deploy > Clear build cache & deploy** so Vite re-runs with the Mapbox env vars and inlines the token.
+5. In the service > **Settings > Custom Domains**, add both `xxica.com` and `www.xxica.com`. Render will show the exact DNS targets to use.
+6. In Porkbun's DNS panel for `xxica.com`, add the records Render lists:
+   - Apex `xxica.com`: **ALIAS** record to the `<service>.onrender.com` target Render gives you.
+   - `www.xxica.com`: **CNAME** to the same target.
+7. Wait a few minutes for DNS to propagate; Render auto-issues a Let's Encrypt certificate once both records resolve.
+
+### Free-tier caveats
+
+- The free Web Service sleeps after 15 minutes of inactivity. First visit after idle takes ~30-60 seconds to wake.
+- Render Free does not support persistent disks. `server/data/store.json` and `server/uploads/` live on the container's ephemeral filesystem and are wiped on every deploy or sleep cycle. Seeded demo data in `store.json` is restored from git on each deploy; anything created at runtime (signups, uploaded photos, journal posts) is not durable until you upgrade to a paid plan with a disk or migrate to external storage.
+- `navigator.geolocation` requires HTTPS in production; Render provides that automatically once the domain is verified.
+
 ## MVP Features
 
 - Join the club with a rider profile
