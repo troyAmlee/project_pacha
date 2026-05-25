@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   computePathMilesExact,
+  getDirectedRoutePath,
   getGpsHeadingDegrees,
   getMovementHeadingDegrees,
   getRouteNavigationState
@@ -43,6 +44,45 @@ test("cached route-to-start guidance advances from the rider's current point", (
   assert.equal(state.activeLeg, "to-start");
   assert.ok(state.activeLegDistanceMiles < 0.25);
   assert.ok(state.toStartPath.every(([lat]) => lat >= currentPosition[0]));
+});
+
+test("route leg can start from a completed first-leg anchor using BFS", () => {
+  const routePath = [
+    [44.9, -93.3],
+    [44.9, -93.29],
+    [44.91, -93.29],
+    [44.91, -93.3],
+    [44.9, -93.3],
+    [44.89, -93.3]
+  ];
+  const currentPosition = [44.9, -93.3];
+  const state = getRouteNavigationState(currentPosition, routePath, {
+    plannedRoutePath: routePath,
+    routeLegStartPoint: currentPosition
+  });
+
+  assert.equal(state.activeLeg, "route");
+  assert.deepEqual(state.remainingPath.slice(0, 2), [
+    [44.9, -93.3],
+    [44.89, -93.3]
+  ]);
+  assert.ok(state.remainingMiles < computePathMilesExact(routePath) / 3);
+});
+
+test("reverse course uses the original finish as the route start without mutating the saved path", () => {
+  const routePath = [
+    [44.9, -93.3],
+    [44.91, -93.29],
+    [44.92, -93.28]
+  ];
+  const reversedPath = getDirectedRoutePath(routePath, "reverse");
+
+  assert.deepEqual(reversedPath, [
+    [44.92, -93.28],
+    [44.91, -93.29],
+    [44.9, -93.3]
+  ]);
+  assert.deepEqual(routePath[0], [44.9, -93.3]);
 });
 
 test("gps heading uses the browser course when available", () => {

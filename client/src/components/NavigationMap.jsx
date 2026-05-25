@@ -15,6 +15,8 @@ const DEFAULT_PITCH = 60;
 const DEFAULT_BEARING = 0;
 const FOLLOW_ZOOM = 17;
 const OVERVIEW_ZOOM = 14;
+const MIN_FOLLOW_ZOOM = 14;
+const MAX_FOLLOW_ZOOM = 20;
 // Bearing snaps below this delta would create visible jitter on every GPS/sensor tick.
 const BEARING_EPSILON_DEG = 2;
 
@@ -42,6 +44,7 @@ export default function NavigationMap({
   const riderEl = useRef(null);
   const [styleLoaded, setStyleLoaded] = useState(false);
   const [bearingMode, setBearingMode] = useState("route");
+  const [followZoom, setFollowZoom] = useState(FOLLOW_ZOOM);
   const compass = useDeviceCompass(bearingMode === "compass");
 
   // Drop back to route-bearing if the device can't (or won't) give us compass.
@@ -155,16 +158,22 @@ export default function NavigationMap({
       transformRequest: (url) => rewriteMapboxUrl(url, token)
     });
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+    const handleZoomEnd = (event) => {
+      if (event.originalEvent) {
+        setFollowZoom(clampZoom(map.getZoom()));
+      }
+    };
 
     map.on("style.load", () => {
       ensureSourcesAndLayers(map);
       setStyleLoaded(true);
     });
+    map.on("zoomend", handleZoomEnd);
 
     mapRef.current = map;
 
     return () => {
+      map.off("zoomend", handleZoomEnd);
       map.remove();
       mapRef.current = null;
       startMarkerRef.current = null;
@@ -274,6 +283,40 @@ export default function NavigationMap({
       ? compass.heading
       : movementHeadingDegrees ?? routeHeadingDegrees ?? DEFAULT_BEARING;
 
+  const handleZoomAdjust = useCallback(
+    (delta) => {
+      const map = mapRef.current;
+      if (!map) return;
+
+      const nextZoom = clampZoom(map.getZoom() + delta);
+      setFollowZoom(nextZoom);
+      map.easeTo({
+        center: displayPosition ? [displayPosition[1], displayPosition[0]] : map.getCenter(),
+        zoom: nextZoom,
+        pitch: DEFAULT_PITCH,
+        bearing: cameraBearing,
+        duration: 180,
+        essential: true
+      });
+    },
+    [cameraBearing, displayPosition]
+  );
+
+  const handleRecenter = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !displayPosition) return;
+
+    setFollowZoom(FOLLOW_ZOOM);
+    map.easeTo({
+      center: [displayPosition[1], displayPosition[0]],
+      zoom: FOLLOW_ZOOM,
+      pitch: DEFAULT_PITCH,
+      bearing: cameraBearing,
+      duration: 240,
+      essential: true
+    });
+  }, [cameraBearing, displayPosition]);
+
   useEffect(() => {
     if (!styleLoaded || !mapRef.current) return;
     const map = mapRef.current;
@@ -281,7 +324,7 @@ export default function NavigationMap({
     if (tracking && displayPosition) {
       map.easeTo({
         center: [displayPosition[1], displayPosition[0]],
-        zoom: FOLLOW_ZOOM,
+        zoom: followZoom,
         pitch: DEFAULT_PITCH,
         bearing: cameraBearing,
         duration: bearingMode === "compass" ? 200 : 700,
@@ -300,7 +343,7 @@ export default function NavigationMap({
       );
       map.fitBounds(bounds, { padding: 60, pitch: DEFAULT_PITCH, duration: 600 });
     }
-  }, [styleLoaded, tracking, displayPosition, cameraBearing, bearingMode, plannedRoutePath]);
+  }, [styleLoaded, tracking, displayPosition, cameraBearing, bearingMode, followZoom, plannedRoutePath]);
 
   const mapClassName = ["route-map", "route-map--navigation", className]
     .filter(Boolean)
@@ -363,9 +406,39 @@ export default function NavigationMap({
         </div>
       </div>
       <div ref={containerRef} className="route-map__canvas" />
+      <div className="route-map__map-controls" aria-label={t("rideScreen.mapControlsLabel")}>
+        <button
+          type="button"
+          className="route-map__map-control"
+          onClick={() => handleZoomAdjust(-1)}
+          aria-label={t("rideScreen.zoomOut")}
+        >
+          -
+        </button>
+        <button
+          type="button"
+          className="route-map__map-control route-map__map-control--wide"
+          onClick={handleRecenter}
+          disabled={!displayPosition}
+        >
+          {t("rideScreen.recenterMap")}
+        </button>
+        <button
+          type="button"
+          className="route-map__map-control"
+          onClick={() => handleZoomAdjust(1)}
+          aria-label={t("rideScreen.zoomIn")}
+        >
+          +
+        </button>
+      </div>
       {routeName ? <span className="route-map__hidden-label">{routeName} - {startLabel}</span> : null}
     </div>
   );
+}
+
+function clampZoom(value) {
+  return Math.min(MAX_FOLLOW_ZOOM, Math.max(MIN_FOLLOW_ZOOM, Number(value) || FOLLOW_ZOOM));
 }
 
 function resolveMapboxStyleUrl(value, token) {

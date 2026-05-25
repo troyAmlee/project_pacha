@@ -16,6 +16,7 @@ import {
   formatDurationMinutes,
   formatNavigationDistance,
   formatMiles,
+  getDirectedRoutePath,
   getGpsAccuracyMeters,
   getMovementHeadingDegrees,
   getRouteNavigationState,
@@ -43,6 +44,8 @@ export default function RideScreenPage() {
   const [elapsedMinutes, setElapsedMinutes] = useState(0);
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [routeDirection, setRouteDirection] = useState("forward");
+  const [routeLegStartPoint, setRouteLegStartPoint] = useState(null);
   const [routedRoute, setRoutedRoute] = useState(null);
   const [routedToStart, setRoutedToStart] = useState(null);
   const [routingStatus, setRoutingStatus] = useState("idle");
@@ -55,11 +58,16 @@ export default function RideScreenPage() {
   const watchIdRef = useRef(null);
   const lastToStartRequestRef = useRef(null);
   const toStartRequestIdRef = useRef(0);
+  const routeLegPendingRef = useRef(false);
   const lastSpokenCueRef = useRef("");
   const lastHeadingPointRef = useRef(null);
 
   const route = data?.routes.find((item) => item.id === id);
-  const routePath = route?.path ?? EMPTY_ROUTE_PATH;
+  const savedRoutePath = route?.path ?? EMPTY_ROUTE_PATH;
+  const routePath = useMemo(
+    () => getDirectedRoutePath(savedRoutePath, routeDirection),
+    [savedRoutePath, routeDirection]
+  );
   const navigationPath = routedRoute?.path?.length >= 2 ? routedRoute.path : routePath;
   const isOwner = route ? route.createdById === member?.id : false;
   const groupsUsingRoute = useMemo(() => {
@@ -84,11 +92,12 @@ export default function RideScreenPage() {
         plannedRoutePath: navigationPath,
         routeSteps: routedRoute?.steps,
         routingSource: routedRoute?.source ?? "local",
+        routeLegStartPoint,
         toStartPath: routedToStart?.path,
         toStartSteps: routedToStart?.steps,
         toStartSource: routedToStart?.source ?? "local"
       }),
-    [currentPosition, navigationPath, routedRoute, routedToStart]
+    [currentPosition, navigationPath, routeLegStartPoint, routedRoute, routedToStart]
   );
   const routingProviderLabel = formatRoutingProviderLabel(
     routedToStart?.source ?? routedRoute?.source
@@ -179,6 +188,34 @@ export default function RideScreenPage() {
   }, []);
 
   useEffect(() => {
+    setRouteDirection("forward");
+    setRouteLegStartPoint(null);
+    routeLegPendingRef.current = false;
+  }, [route?.id]);
+
+  useEffect(() => {
+    if (!navigationState || !currentPosition) {
+      return;
+    }
+
+    if (navigationState.activeLeg === "to-start") {
+      routeLegPendingRef.current = true;
+      return;
+    }
+
+    if (routeLegStartPoint || navigationState.activeLeg !== "route") {
+      return;
+    }
+
+    if (routeLegPendingRef.current || navigationState.snappedToRoute) {
+      setRouteLegStartPoint(
+        navigationState.closestPoint ?? navigationState.displayPosition ?? currentPosition
+      );
+      routeLegPendingRef.current = false;
+    }
+  }, [currentPosition, navigationState, routeLegStartPoint]);
+
+  useEffect(() => {
     if (!voiceEnabled) {
       return;
     }
@@ -215,10 +252,12 @@ export default function RideScreenPage() {
     setRoutedRoute(null);
     setRoutedToStart(null);
     setRoutingStatus("idle");
+    setRouteLegStartPoint(null);
     lastToStartRequestRef.current = null;
     toStartRequestIdRef.current += 1;
+    routeLegPendingRef.current = false;
 
-    if (!route?.path || route.path.length < 2) {
+    if (!routePath || routePath.length < 2) {
       return undefined;
     }
 
@@ -228,7 +267,7 @@ export default function RideScreenPage() {
       setRoutingStatus("loading");
 
       try {
-        const payload = await api.routePath(getRoutingWaypoints(route.path), "bike");
+        const payload = await api.routePath(getRoutingWaypoints(routePath), "bike");
 
         if (!cancelled && payload?.path?.length >= 2) {
           setRoutedRoute(payload);
@@ -246,7 +285,7 @@ export default function RideScreenPage() {
     return () => {
       cancelled = true;
     };
-  }, [route?.id, route?.updatedAt]);
+  }, [route?.id, route?.updatedAt, routePath]);
 
   useEffect(() => {
     if (!currentPosition || !routePath[0]) {
@@ -325,6 +364,7 @@ export default function RideScreenPage() {
       setTrail([]);
       setRideStartedAt(null);
       setElapsedMinutes(0);
+      setRouteLegStartPoint(null);
       setFeedback({
         type: "success",
         message: t("rideScreen.rideLoggedFeedback", {
@@ -434,6 +474,16 @@ export default function RideScreenPage() {
     setTracking(false);
     setCurrentHeadingDegrees(null);
     lastHeadingPointRef.current = null;
+  }
+
+  function toggleRouteDirection() {
+    setRouteDirection((current) => (current === "forward" ? "reverse" : "forward"));
+    setRouteLegStartPoint(null);
+    setRoutedRoute(null);
+    setRoutedToStart(null);
+    lastToStartRequestRef.current = null;
+    toStartRequestIdRef.current += 1;
+    routeLegPendingRef.current = false;
   }
 
   function toggleVoiceNavigation() {
@@ -621,6 +671,14 @@ export default function RideScreenPage() {
                     {t("rideScreen.startWithout")}
                   </button>
                 ) : null}
+                <button className="button button--outline button--sm" onClick={toggleRouteDirection} type="button">
+                  {routeDirection === "forward"
+                    ? t("rideScreen.reverseCourse")
+                    : t("rideScreen.forwardCourse")}
+                </button>
+                <button className="button button--outline button--sm" onClick={() => navigate("/")} type="button">
+                  {t("rideScreen.backToBoard")}
+                </button>
               </div>
 
               <p className="ride-screen__support-note">{t("rideScreen.supportNote")}</p>

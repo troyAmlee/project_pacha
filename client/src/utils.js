@@ -230,13 +230,30 @@ export function getRoutingWaypoints(path, maxPoints = 24) {
     .map((index) => path[index]);
 }
 
+export function getDirectedRoutePath(path, direction = "forward") {
+  if (!Array.isArray(path)) {
+    return [];
+  }
+
+  return direction === "reverse" ? [...path].reverse() : path;
+}
+
 export function getRouteNavigationState(currentPosition, path, options = {}) {
   if (!Array.isArray(path) || path.length < 2) {
     return null;
   }
 
-  const plannedRoutePath =
+  const sourceRoutePath =
     Array.isArray(options.plannedRoutePath) && options.plannedRoutePath.length >= 2
+      ? options.plannedRoutePath
+      : path;
+  const plannedRoutePath = options.routeLegStartPoint
+    ? findShortestPathFromRoutePoint(
+        sourceRoutePath,
+        options.routeLegStartPoint,
+        sourceRoutePath[sourceRoutePath.length - 1]
+      )
+    : Array.isArray(options.plannedRoutePath) && options.plannedRoutePath.length >= 2
       ? options.plannedRoutePath
       : findShortestPathOnRouteGraph(path, path[0], path[path.length - 1]);
   const routeMiles = computePathMilesExact(plannedRoutePath);
@@ -622,6 +639,22 @@ function findShortestPathToRouteStart(currentPosition, plannedRoutePath) {
   const bfsPath = findBreadthFirstPath(graph, currentKey, routeStartKey);
 
   return bfsPath.length >= 2 ? bfsPath : [currentPosition, routeStart];
+}
+
+function findShortestPathFromRoutePoint(path, startPoint, finishPoint) {
+  const graph = buildRouteGraph(path);
+  const closest = getClosestPointOnPath(startPoint, path);
+  const startKey = addGraphNode(graph, closest.point);
+  const segmentStartKey = addGraphNode(graph, path[closest.segmentIndex]);
+  const segmentEndKey = addGraphNode(graph, path[closest.segmentIndex + 1]);
+  const finishKey = coordinateKey(finishPoint);
+
+  addGraphEdge(graph, startKey, segmentStartKey);
+  addGraphEdge(graph, startKey, segmentEndKey);
+
+  const bfsPath = findBreadthFirstPath(graph, startKey, finishKey);
+
+  return bfsPath.length >= 2 ? bfsPath : path;
 }
 
 function getToStartPath(currentPosition, startPoint, plannedRoutePath, routedToStartPath) {
