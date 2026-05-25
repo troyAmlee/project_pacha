@@ -82,21 +82,22 @@ Covers provider order (bike → GraphHopper, Valhalla, no OSRM), GraphHopper URL
 
 ## Deploy to Render (xxica.com)
 
-The repo includes a `render.yaml` Blueprint so the production service can be created without clicking through dashboard fields.
+The repo includes a `render.yaml` Blueprint so the production service can be created without clicking through dashboard fields. Use a **Web Service** from the Blueprint, not a Static Site: the Express server owns `/api/*`, file uploads, auth cookies, and serving the built Vite files from `client/dist`.
 
 1. Push the latest `main` to GitHub.
 2. In Render, click **New > Blueprint** and select this repo. Render reads `render.yaml`, creates a Free Web Service called `xxica`, and generates a strong `SESSION_SECRET` automatically.
-3. Open the service > **Environment** and set:
+3. If you already created a Static Site manually, leave it alone until the Web Service deploy succeeds. Then move the custom domains from that Static Site to the `xxica` Web Service. Render service type/runtime cannot be changed after creation.
+4. Open the service > **Environment** and set:
    - `VITE_MAPBOX_TOKEN` = your `pk.` Mapbox token
    - `VITE_MAPBOX_STYLE_URL` (optional) = a style URL other than the `mapbox/streets-v12` default
 
    The app will deploy and run even without these (it falls back to OpenStreetMap tiles), but you want Mapbox styling.
-4. Trigger **Manual Deploy > Clear build cache & deploy** so Vite re-runs with the Mapbox env vars and inlines the token.
-5. In the service > **Settings > Custom Domains**, add both `xxica.com` and `www.xxica.com`. Render will show the exact DNS targets to use.
-6. In Porkbun's DNS panel for `xxica.com`, add the records Render lists:
+5. Trigger **Manual Deploy > Clear build cache & deploy** so Vite re-runs with the Mapbox env vars and inlines the token.
+6. In the service > **Settings > Custom Domains**, add both `xxica.com` and `www.xxica.com`. Render will show the exact DNS targets to use.
+7. In Porkbun's DNS panel for `xxica.com`, add the records Render lists:
    - Apex `xxica.com`: **ALIAS** record to the `<service>.onrender.com` target Render gives you.
    - `www.xxica.com`: **CNAME** to the same target.
-7. Wait a few minutes for DNS to propagate; Render auto-issues a Let's Encrypt certificate once both records resolve.
+8. Wait a few minutes for DNS to propagate; Render auto-issues a Let's Encrypt certificate once both records resolve.
 
 ### Free-tier caveats
 
