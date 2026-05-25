@@ -23,6 +23,7 @@ export default function NavigationMap({
   trail = [],
   currentPosition = null,
   currentAccuracyMeters = 45,
+  movementHeadingDegrees = null,
   navigationState = null,
   tracking = false,
   height = 640,
@@ -53,11 +54,12 @@ export default function NavigationMap({
     }
   }, [bearingMode, compass.permissionState]);
 
-  const handleBearingToggle = useCallback(async () => {
-    if (bearingMode === "compass") {
-      setBearingMode("route");
-      return;
-    }
+  const handleRouteBearingSelect = useCallback(() => {
+    setBearingMode("route");
+  }, []);
+
+  const handleCompassBearingSelect = useCallback(async () => {
+    if (bearingMode === "compass") return;
     const granted = await compass.requestPermission();
     if (granted) setBearingMode("compass");
   }, [bearingMode, compass]);
@@ -65,7 +67,11 @@ export default function NavigationMap({
   const computedNavigationState =
     navigationState ?? getRouteNavigationState(currentPosition, path);
   const displayPosition = computedNavigationState?.displayPosition ?? currentPosition;
-  const headingDegrees = computedNavigationState?.headingDegrees ?? 0;
+  const routeHeadingDegrees = computedNavigationState?.headingDegrees ?? 0;
+  const activeHeadingDegrees =
+    bearingMode === "compass" && compass.heading != null
+      ? compass.heading
+      : movementHeadingDegrees ?? routeHeadingDegrees;
   const plannedRoutePath = computedNavigationState?.plannedRoutePath ?? path;
   const toStartPath = computedNavigationState?.toStartPath ?? EMPTY_PATH;
   const remainingPath = computedNavigationState?.remainingPath ?? path;
@@ -106,6 +112,11 @@ export default function NavigationMap({
           miles: formatNavigationDistance(computedNavigationState.activeLegDistanceMiles)
         })
       : `${progressPercent}%`;
+  const routeStatusLabel = !currentPosition
+    ? t("rideScreen.headlineGuidanceReady")
+    : computedNavigationState?.snappedToRoute
+      ? t("rideScreen.cueRoutingFallback")
+      : t("rideScreen.headlineReturnRoute");
   const cueDirection = /left|izquierda/i.test(navigationCue.primary)
     ? "left"
     : /right|derecha/i.test(navigationCue.primary)
@@ -251,17 +262,17 @@ export default function NavigationMap({
     }
 
     if (riderEl.current) {
-      riderEl.current.style.setProperty("--heading", `${headingDegrees}deg`);
+      riderEl.current.style.setProperty("--heading", `${activeHeadingDegrees}deg`);
     }
 
     return undefined;
-  }, [styleLoaded, displayPosition, headingDegrees]);
+  }, [styleLoaded, displayPosition, activeHeadingDegrees]);
 
   // Camera: follow when tracking, otherwise fit bounds to route
   const cameraBearing =
     bearingMode === "compass" && compass.heading != null
       ? compass.heading
-      : headingDegrees || DEFAULT_BEARING;
+      : movementHeadingDegrees ?? routeHeadingDegrees ?? DEFAULT_BEARING;
 
   useEffect(() => {
     if (!styleLoaded || !mapRef.current) return;
@@ -297,48 +308,58 @@ export default function NavigationMap({
 
   return (
     <div className={mapClassName} style={{ height }}>
-      <div className="route-map__overlay">
-        <div className="route-map__navigation-card">
-          <div className="route-map__navigation-cue">
-            <span
-              aria-hidden="true"
-              className={`route-map__direction-icon route-map__direction-icon--${cueDirection}`}
-            />
-            <div>
-              <strong>{navigationCue.primary}</strong>
-              <span>{navigationCue.secondary}</span>
+      <div className="route-map__overlay route-map__overlay--navigation">
+        <div className="route-map__navigation-card route-map__navigation-card--compact">
+          <div className="route-map__navigation-primary">
+            <div className="route-map__navigation-cue">
+              <span
+                aria-hidden="true"
+                className={`route-map__direction-icon route-map__direction-icon--${cueDirection}`}
+              />
+              <div>
+                <strong>{navigationCue.primary}</strong>
+                <span>{navigationCue.secondary}</span>
+              </div>
             </div>
+            {compass.permissionState !== "unsupported" ? (
+              <div
+                className="route-map__bearing-control"
+                role="group"
+                aria-label={t("rideScreen.bearingModeLabel")}
+              >
+                <button
+                  type="button"
+                  className={`route-map__bearing-option${
+                    bearingMode === "route" ? " route-map__bearing-option--active" : ""
+                  }`}
+                  onClick={handleRouteBearingSelect}
+                  aria-pressed={bearingMode === "route"}
+                >
+                  {t("rideScreen.bearingRoute")}
+                </button>
+                <button
+                  type="button"
+                  className={`route-map__bearing-option${
+                    bearingMode === "compass" ? " route-map__bearing-option--active" : ""
+                  }`}
+                  onClick={handleCompassBearingSelect}
+                  aria-pressed={bearingMode === "compass"}
+                >
+                  {t("rideScreen.bearingCompass")}
+                </button>
+              </div>
+            ) : null}
           </div>
-          <div className="route-map__navigation-meta">
+          <div className="route-map__navigation-meta route-map__navigation-meta--compact">
             <span>{t("rideScreen.cueRemaining", { miles: remainingLabel })}</span>
             <span>{activeLegLabel}</span>
-            <span>
-              {!currentPosition
-                ? t("rideScreen.headlineGuidanceReady")
-                : computedNavigationState?.snappedToRoute
-                  ? t("rideScreen.cueRoutingFallback")
-                  : t("rideScreen.headlineReturnRoute")}
-            </span>
+            <span>{routeStatusLabel}</span>
+            {compass.permissionState === "denied" ? (
+              <span className="route-map__compass-hint">
+                {t("rideScreen.compassDenied")}
+              </span>
+            ) : null}
           </div>
-          {compass.permissionState !== "unsupported" ? (
-            <button
-              type="button"
-              className={`route-map__compass-toggle${
-                bearingMode === "compass" ? " route-map__compass-toggle--active" : ""
-              }`}
-              onClick={handleBearingToggle}
-              aria-pressed={bearingMode === "compass"}
-            >
-              {bearingMode === "compass"
-                ? t("rideScreen.compassToggleOn")
-                : t("rideScreen.compassToggleOff")}
-              {compass.permissionState === "denied" ? (
-                <span className="route-map__compass-hint">
-                  {t("rideScreen.compassDenied")}
-                </span>
-              ) : null}
-            </button>
-          ) : null}
         </div>
       </div>
       <div ref={containerRef} className="route-map__canvas" />

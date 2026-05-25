@@ -134,6 +134,34 @@ export function getGpsAccuracyMeters(position, fallback = 45) {
   return Math.min(140, Math.max(5, Math.round(position.coords.accuracy)));
 }
 
+export function getGpsHeadingDegrees(position) {
+  const heading = Number(position?.coords?.heading);
+
+  if (!Number.isFinite(heading) || heading < 0) {
+    return null;
+  }
+
+  return normalizeHeadingDegrees(heading);
+}
+
+export function getMovementHeadingDegrees({ currentPoint, previousPoint, gpsPosition }) {
+  const gpsHeading = getGpsHeadingDegrees(gpsPosition);
+
+  if (gpsHeading !== null) {
+    return gpsHeading;
+  }
+
+  if (!currentPoint || !previousPoint) {
+    return null;
+  }
+
+  if (distanceBetweenPointsMiles(previousPoint, currentPoint) < GPS_PATH_CORNER_MIN_DISTANCE_MILES) {
+    return null;
+  }
+
+  return normalizeHeadingDegrees(getBearingDegrees(previousPoint, currentPoint));
+}
+
 export function formatNavigationDistance(value) {
   const miles = Math.max(0, Number(value) || 0);
 
@@ -247,7 +275,7 @@ export function getRouteNavigationState(currentPosition, path, options = {}) {
   const closest = getClosestPointOnPath(currentPosition, plannedRoutePath);
   const snappedToRoute = closest.distanceMiles <= NAVIGATION_SNAP_TO_ROUTE_MILES;
 
-  if (!startReached) {
+  if (!startReached && !snappedToRoute) {
     const toStartClosest = getClosestPointOnPath(currentPosition, toStartPath);
     // Live remaining distance to the route start: the cached path's total
     // length minus how far the rider has progressed along it. Updates every
@@ -854,7 +882,7 @@ function getDistanceToPathIndex(fromPoint, path, segmentIndex, targetIndex) {
   return distance;
 }
 
-function getBearingDegrees(start, end) {
+export function getBearingDegrees(start, end) {
   if (!start || !end) {
     return 0;
   }
@@ -870,6 +898,14 @@ function getBearingDegrees(start, end) {
     Math.sin(startLat) * Math.cos(endLat) * Math.cos(deltaLng);
 
   return (Math.atan2(y, x) * radiansToDegrees + 360) % 360;
+}
+
+export function normalizeHeadingDegrees(value) {
+  if (!Number.isFinite(Number(value))) {
+    return null;
+  }
+
+  return Number((((Number(value) % 360) + 360) % 360).toFixed(3));
 }
 
 function getSignedTurnAngleDegrees(previousPoint, currentPoint, nextPoint) {

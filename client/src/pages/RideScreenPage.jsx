@@ -17,6 +17,7 @@ import {
   formatNavigationDistance,
   formatMiles,
   getGpsAccuracyMeters,
+  getMovementHeadingDegrees,
   getRouteNavigationState,
   getRoutingWaypoints,
   gpsPositionToPoint,
@@ -35,6 +36,7 @@ export default function RideScreenPage() {
   const { t } = useTranslation();
   const [currentPosition, setCurrentPosition] = useState(null);
   const [currentAccuracyMeters, setCurrentAccuracyMeters] = useState(null);
+  const [currentHeadingDegrees, setCurrentHeadingDegrees] = useState(null);
   const [trail, setTrail] = useState([]);
   const [tracking, setTracking] = useState(false);
   const [rideStartedAt, setRideStartedAt] = useState(null);
@@ -53,6 +55,7 @@ export default function RideScreenPage() {
   const watchIdRef = useRef(null);
   const lastToStartRequestRef = useRef(null);
   const lastSpokenCueRef = useRef("");
+  const lastHeadingPointRef = useRef(null);
 
   const route = data?.routes.find((item) => item.id === id);
   const routePath = route?.path ?? EMPTY_ROUTE_PATH;
@@ -386,9 +389,22 @@ export default function RideScreenPage() {
       (position) => {
         const point = gpsPositionToPoint(position);
         const accuracyMeters = getGpsAccuracyMeters(position);
+        const headingDegrees = getMovementHeadingDegrees({
+          currentPoint: point,
+          previousPoint: lastHeadingPointRef.current,
+          gpsPosition: position
+        });
 
         setCurrentPosition(point);
         setCurrentAccuracyMeters(accuracyMeters);
+
+        if (headingDegrees !== null) {
+          setCurrentHeadingDegrees(headingDegrees);
+          lastHeadingPointRef.current = point;
+        } else if (!lastHeadingPointRef.current) {
+          lastHeadingPointRef.current = point;
+        }
+
         setTrail((current) => {
           if (!shouldAddGpsPoint(current, point)) {
             return current;
@@ -415,6 +431,8 @@ export default function RideScreenPage() {
     }
 
     setTracking(false);
+    setCurrentHeadingDegrees(null);
+    lastHeadingPointRef.current = null;
   }
 
   function toggleVoiceNavigation() {
@@ -468,6 +486,7 @@ export default function RideScreenPage() {
           <div className="ride-screen__map-panel">
             <NavigationMap
               currentAccuracyMeters={currentAccuracyMeters ?? undefined}
+              movementHeadingDegrees={currentHeadingDegrees}
               currentPosition={currentPosition}
               height={640}
               navigationState={navigationState}

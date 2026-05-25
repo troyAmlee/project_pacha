@@ -1689,6 +1689,133 @@ img {
   opacity: 0.8;
 }
 
+.route-map__overlay--navigation {
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  right: max(8px, env(safe-area-inset-right, 0px));
+  bottom: auto;
+  left: max(8px, env(safe-area-inset-left, 0px));
+  max-width: none;
+}
+
+.route-map__navigation-card--compact {
+  width: min(680px, 100%);
+  padding: 8px;
+  border-radius: 8px;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 20px rgba(24, 32, 38, 0.12);
+}
+
+.route-map__navigation-primary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.route-map__navigation-card--compact .route-map__navigation-cue {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 8px;
+}
+
+.route-map__navigation-card--compact .route-map__navigation-cue div {
+  gap: 1px;
+}
+
+.route-map__navigation-card--compact .route-map__navigation-cue strong,
+.route-map__navigation-card--compact .route-map__navigation-cue div > span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.route-map__navigation-card--compact .route-map__navigation-cue strong {
+  -webkit-line-clamp: 1;
+  font-size: 0.96rem;
+  line-height: 1.14;
+}
+
+.route-map__navigation-card--compact .route-map__navigation-cue div > span {
+  -webkit-line-clamp: 1;
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.route-map__navigation-card--compact .route-map__direction-icon {
+  width: 32px;
+  height: 32px;
+  box-shadow: 0 7px 16px rgba(26, 115, 232, 0.24);
+}
+
+.route-map__navigation-card--compact .route-map__direction-icon::before {
+  width: 10px;
+  height: 10px;
+  border-top-width: 3px;
+  border-right-width: 3px;
+}
+
+.route-map__navigation-meta--compact {
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.route-map__navigation-meta--compact span {
+  min-height: 22px;
+  max-width: 42%;
+  overflow: hidden;
+  padding: 0 7px;
+  border-radius: 6px;
+  font-size: 0.66rem;
+  letter-spacing: 0.03em;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.route-map__navigation-meta--compact .route-map__compass-hint {
+  max-width: 100%;
+  background: rgba(255, 247, 237, 0.96);
+  color: #9a3412;
+}
+
+.route-map__bearing-control {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(52px, 1fr));
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid rgba(26, 115, 232, 0.22);
+  border-radius: 8px;
+  background: rgba(245, 248, 252, 0.94);
+  pointer-events: auto;
+}
+
+.route-map__bearing-option {
+  min-height: 30px;
+  padding: 0 9px;
+  border: 0;
+  border-right: 1px solid rgba(26, 115, 232, 0.16);
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.route-map__bearing-option:last-child {
+  border-right: 0;
+}
+
+.route-map__bearing-option--active {
+  background: #1a73e8;
+  color: #fff;
+}
+
 .route-map__marker-shell,
 .route-map__navigation-marker-shell {
   border: 0;
@@ -2187,6 +2314,61 @@ img {
   .route-map__direction-icon {
     width: 38px;
     height: 38px;
+  }
+
+  .route-map__overlay--navigation {
+    top: calc(env(safe-area-inset-top, 0px) + 6px);
+    right: max(6px, env(safe-area-inset-right, 0px));
+    left: max(6px, env(safe-area-inset-left, 0px));
+  }
+
+  .route-map__navigation-card--compact {
+    width: 100%;
+    padding: 7px;
+  }
+
+  .route-map__navigation-primary {
+    align-items: center;
+    gap: 6px;
+  }
+
+  .route-map__navigation-card--compact .route-map__navigation-cue {
+    align-items: center;
+    gap: 7px;
+  }
+
+  .route-map__navigation-card--compact .route-map__navigation-cue strong {
+    font-size: 0.88rem;
+  }
+
+  .route-map__navigation-card--compact .route-map__navigation-cue div > span {
+    font-size: 0.68rem;
+  }
+
+  .route-map__navigation-card--compact .route-map__direction-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .route-map__bearing-control {
+    grid-template-columns: repeat(2, minmax(46px, 1fr));
+  }
+
+  .route-map__bearing-option {
+    min-height: 28px;
+    padding: 0 6px;
+    font-size: 0.67rem;
+  }
+
+  .route-map__navigation-meta--compact span {
+    max-width: 50%;
+    min-height: 20px;
+    padding: 0 6px;
+    font-size: 0.62rem;
+  }
+
+  .route-map__navigation-meta--compact span:nth-child(3) {
+    display: none;
   }
 
   .directions-panel {
