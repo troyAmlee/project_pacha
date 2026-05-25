@@ -579,6 +579,10 @@ function buildRouteSaveMessage({ isEditing, ride, matchSource, t }) {
 }
 
 function formatRoutingProviderLabel(source) {
+  if (source === "graphhopper") {
+    return "GraphHopper";
+  }
+
   if (source === "valhalla") {
     return "Valhalla";
   }

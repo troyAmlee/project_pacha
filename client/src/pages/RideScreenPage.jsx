@@ -219,7 +219,7 @@ export default function RideScreenPage() {
 
     let cancelled = false;
 
-    async function loadRoadRoute() {
+    async function loadBikeRoute() {
       setRoutingStatus("loading");
 
       try {
@@ -236,7 +236,7 @@ export default function RideScreenPage() {
       }
     }
 
-    void loadRoadRoute();
+    void loadBikeRoute();
 
     return () => {
       cancelled = true;
@@ -260,7 +260,7 @@ export default function RideScreenPage() {
     lastToStartRequestRef.current = currentPosition;
     let cancelled = false;
 
-    async function loadRoadPathToStart() {
+    async function loadBikePathToStart() {
       try {
         const payload = await api.routePath([currentPosition, routePath[0]], "bike");
 
@@ -274,7 +274,7 @@ export default function RideScreenPage() {
       }
     }
 
-    void loadRoadPathToStart();
+    void loadBikePathToStart();
 
     return () => {
       cancelled = true;
@@ -749,6 +749,10 @@ function DirectionsPanel({
 }
 
 function formatRoutingProviderLabel(source) {
+  if (source === "graphhopper") {
+    return "GraphHopper";
+  }
+
   if (source === "valhalla") {
     return "Valhalla";
   }
