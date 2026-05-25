@@ -2,13 +2,17 @@ services:
   - type: web
     name: xxica
     runtime: node
-    plan: free
+    plan: starter
     region: oregon
     branch: main
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true
+    disk:
+      name: xxica-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
@@ -16,6 +20,16 @@ services:
         value: "20"
       - key: SESSION_SECRET
         generateValue: true
+      - key: STORE_FILE
+        value: /data/store.json
+      - key: UPLOAD_DIR
+        value: /data/uploads
+      - key: ROUTING_PROVIDER
+        value: graphhopper
+      - key: ALLOW_OSRM_BIKE_FALLBACK
+        value: "false"
+      - key: GRAPHHOPPER_API_KEY
+        sync: false
       - key: VITE_MAPBOX_TOKEN
         sync: false
       - key: VITE_MAPBOX_STYLE_URL

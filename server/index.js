@@ -32,8 +32,12 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const uploadsDirectory = path.resolve(__dirname, "uploads");
+const uploadsDirectory = process.env.UPLOAD_DIR
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : path.resolve(__dirname, "uploads");
 const clientDistDirectory = path.resolve(__dirname, "..", "client", "dist");
+
+fs.mkdirSync(uploadsDirectory, { recursive: true });
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const MAX_ROUTE_POINTS = 8000;
