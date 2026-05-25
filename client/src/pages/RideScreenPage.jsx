@@ -54,6 +54,7 @@ export default function RideScreenPage() {
   );
   const watchIdRef = useRef(null);
   const lastToStartRequestRef = useRef(null);
+  const toStartRequestIdRef = useRef(0);
   const lastSpokenCueRef = useRef("");
   const lastHeadingPointRef = useRef(null);
 
@@ -215,6 +216,7 @@ export default function RideScreenPage() {
     setRoutedToStart(null);
     setRoutingStatus("idle");
     lastToStartRequestRef.current = null;
+    toStartRequestIdRef.current += 1;
 
     if (!route?.path || route.path.length < 2) {
       return undefined;
@@ -261,17 +263,18 @@ export default function RideScreenPage() {
     }
 
     lastToStartRequestRef.current = currentPosition;
-    let cancelled = false;
+    const requestId = toStartRequestIdRef.current + 1;
+    toStartRequestIdRef.current = requestId;
 
     async function loadBikePathToStart() {
       try {
         const payload = await api.routePath([currentPosition, routePath[0]], "bike");
 
-        if (!cancelled && payload?.path?.length >= 2) {
+        if (toStartRequestIdRef.current === requestId && payload?.path?.length >= 2) {
           setRoutedToStart(payload);
         }
       } catch {
-        if (!cancelled) {
+        if (toStartRequestIdRef.current === requestId) {
           setRoutedToStart(null);
         }
       }
@@ -279,9 +282,7 @@ export default function RideScreenPage() {
 
     void loadBikePathToStart();
 
-    return () => {
-      cancelled = true;
-    };
+    return undefined;
   }, [currentPosition, routePath]);
 
   if (loading) {

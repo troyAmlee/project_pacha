@@ -626,7 +626,13 @@ function findShortestPathToRouteStart(currentPosition, plannedRoutePath) {
 
 function getToStartPath(currentPosition, startPoint, plannedRoutePath, routedToStartPath) {
   if (Array.isArray(routedToStartPath) && routedToStartPath.length >= 2) {
-    return compactPath([currentPosition, ...routedToStartPath, startPoint]);
+    const closest = getClosestPointOnPath(currentPosition, routedToStartPath);
+    return compactPath([
+      currentPosition,
+      closest.point,
+      ...routedToStartPath.slice(closest.segmentIndex + 1),
+      startPoint
+    ]);
   }
 
   return findShortestPathToRouteStart(currentPosition, plannedRoutePath);

@@ -23,6 +23,28 @@ test("navigation resumes from the rider's current point when already on the rout
   assert.ok(state.progressPercent > 40);
 });
 
+test("cached route-to-start guidance advances from the rider's current point", () => {
+  const routePath = [
+    [44.904, -93.3],
+    [44.905, -93.3]
+  ];
+  const cachedToStartPath = [
+    [44.9, -93.3],
+    [44.901, -93.3],
+    [44.902, -93.3],
+    [44.903, -93.3],
+    [44.904, -93.3]
+  ];
+  const currentPosition = [44.901, -93.3];
+  const state = getRouteNavigationState(currentPosition, routePath, {
+    toStartPath: cachedToStartPath
+  });
+
+  assert.equal(state.activeLeg, "to-start");
+  assert.ok(state.activeLegDistanceMiles < 0.25);
+  assert.ok(state.toStartPath.every(([lat]) => lat >= currentPosition[0]));
+});
+
 test("gps heading uses the browser course when available", () => {
   const position = {
     coords: {
