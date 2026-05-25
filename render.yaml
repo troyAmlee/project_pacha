@@ -11,7 +11,7 @@ services:
     autoDeploy: true
     disk:
       name: xxica-data
-      mountPath: /data
+      mountPath: /var/data
       sizeGB: 1
     envVars:
       - key: NODE_ENV
@@ -21,9 +21,9 @@ services:
       - key: SESSION_SECRET
         generateValue: true
       - key: STORE_FILE
-        value: /data/store.json
+        value: /var/data/store.json
       - key: UPLOAD_DIR
-        value: /data/uploads
+        value: /var/data/uploads
       - key: ROUTING_PROVIDER
         value: graphhopper
       - key: ALLOW_OSRM_BIKE_FALLBACK
