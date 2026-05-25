@@ -1661,6 +1661,34 @@ img {
   box-shadow: none;
 }
 
+.route-map__compass-toggle {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(26, 115, 232, 0.35);
+  background: rgba(245, 248, 252, 0.94);
+  color: #1a73e8;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.route-map__compass-toggle--active {
+  background: #1a73e8;
+  border-color: #1a73e8;
+  color: #fff;
+}
+
+.route-map__compass-hint {
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
 .route-map__marker-shell,
 .route-map__navigation-marker-shell {
   border: 0;

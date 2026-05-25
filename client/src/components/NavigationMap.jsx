@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useTranslation } from "../i18n";
@@ -15,6 +15,8 @@ const DEFAULT_PITCH = 60;
 const DEFAULT_BEARING = 0;
 const FOLLOW_ZOOM = 17;
 const OVERVIEW_ZOOM = 14;
+// Bearing snaps below this delta would create visible jitter on every GPS/sensor tick.
+const BEARING_EPSILON_DEG = 2;
 
 export default function NavigationMap({
   path = [],
@@ -38,6 +40,27 @@ export default function NavigationMap({
   const riderMarkerRef = useRef(null);
   const riderEl = useRef(null);
   const [styleLoaded, setStyleLoaded] = useState(false);
+  const [bearingMode, setBearingMode] = useState("route");
+  const compass = useDeviceCompass(bearingMode === "compass");
+
+  // Drop back to route-bearing if the device can't (or won't) give us compass.
+  useEffect(() => {
+    if (
+      bearingMode === "compass" &&
+      (compass.permissionState === "denied" || compass.permissionState === "unsupported")
+    ) {
+      setBearingMode("route");
+    }
+  }, [bearingMode, compass.permissionState]);
+
+  const handleBearingToggle = useCallback(async () => {
+    if (bearingMode === "compass") {
+      setBearingMode("route");
+      return;
+    }
+    const granted = await compass.requestPermission();
+    if (granted) setBearingMode("compass");
+  }, [bearingMode, compass]);
 
   const computedNavigationState =
     navigationState ?? getRouteNavigationState(currentPosition, path);
@@ -235,6 +258,11 @@ export default function NavigationMap({
   }, [styleLoaded, displayPosition, headingDegrees]);
 
   // Camera: follow when tracking, otherwise fit bounds to route
+  const cameraBearing =
+    bearingMode === "compass" && compass.heading != null
+      ? compass.heading
+      : headingDegrees || DEFAULT_BEARING;
+
   useEffect(() => {
     if (!styleLoaded || !mapRef.current) return;
     const map = mapRef.current;
@@ -244,8 +272,8 @@ export default function NavigationMap({
         center: [displayPosition[1], displayPosition[0]],
         zoom: FOLLOW_ZOOM,
         pitch: DEFAULT_PITCH,
-        bearing: headingDegrees || DEFAULT_BEARING,
-        duration: 700,
+        bearing: cameraBearing,
+        duration: bearingMode === "compass" ? 200 : 700,
         essential: true
       });
       return;
@@ -261,7 +289,7 @@ export default function NavigationMap({
       );
       map.fitBounds(bounds, { padding: 60, pitch: DEFAULT_PITCH, duration: 600 });
     }
-  }, [styleLoaded, tracking, displayPosition, headingDegrees, plannedRoutePath]);
+  }, [styleLoaded, tracking, displayPosition, cameraBearing, bearingMode, plannedRoutePath]);
 
   const mapClassName = ["route-map", "route-map--navigation", className]
     .filter(Boolean)
@@ -292,6 +320,25 @@ export default function NavigationMap({
                   : t("rideScreen.headlineReturnRoute")}
             </span>
           </div>
+          {compass.permissionState !== "unsupported" ? (
+            <button
+              type="button"
+              className={`route-map__compass-toggle${
+                bearingMode === "compass" ? " route-map__compass-toggle--active" : ""
+              }`}
+              onClick={handleBearingToggle}
+              aria-pressed={bearingMode === "compass"}
+            >
+              {bearingMode === "compass"
+                ? t("rideScreen.compassToggleOn")
+                : t("rideScreen.compassToggleOff")}
+              {compass.permissionState === "denied" ? (
+                <span className="route-map__compass-hint">
+                  {t("rideScreen.compassDenied")}
+                </span>
+              ) : null}
+            </button>
+          ) : null}
         </div>
       </div>
       <div ref={containerRef} className="route-map__canvas" />
@@ -558,4 +605,92 @@ function createBadge(label, modifierClass) {
   inner.textContent = label;
   shell.appendChild(inner);
   return shell;
+}
+
+function detectCompassSupport() {
+  if (typeof window === "undefined") return "unsupported";
+  if (typeof window.DeviceOrientationEvent === "undefined") return "unsupported";
+  return "unknown";
+}
+
+// Listens to the device's magnetometer when `active` is true. On iOS the first
+// call to requestPermission() must happen from a user gesture, so the toggle
+// button awaits it before flipping into compass mode.
+function useDeviceCompass(active) {
+  const [permissionState, setPermissionState] = useState(detectCompassSupport);
+  const [heading, setHeading] = useState(null);
+  const lastAppliedRef = useRef(null);
+
+  const requestPermission = useCallback(async () => {
+    if (typeof window === "undefined") return false;
+    const OrientationEvent = window.DeviceOrientationEvent;
+    if (!OrientationEvent) {
+      setPermissionState("unsupported");
+      return false;
+    }
+    if (typeof OrientationEvent.requestPermission === "function") {
+      try {
+        const result = await OrientationEvent.requestPermission();
+        const granted = result === "granted";
+        setPermissionState(granted ? "granted" : "denied");
+        return granted;
+      } catch {
+        setPermissionState("denied");
+        return false;
+      }
+    }
+    setPermissionState("granted");
+    return true;
+  }, []);
+
+  useEffect(() => {
+    if (!active || permissionState === "unsupported" || permissionState === "denied") {
+      return undefined;
+    }
+    if (typeof window === "undefined") return undefined;
+
+    const handle = (event) => {
+      const next = readCompassHeading(event);
+      if (next == null) return;
+      const last = lastAppliedRef.current;
+      if (last != null && Math.abs(next - last) < BEARING_EPSILON_DEG) return;
+      lastAppliedRef.current = next;
+      setHeading(next);
+    };
+
+    // Prefer the absolute variant (true magnetic north). Fall back to the
+    // relative event, which on iOS still exposes a usable webkitCompassHeading.
+    const useAbsolute = "ondeviceorientationabsolute" in window;
+    const eventName = useAbsolute ? "deviceorientationabsolute" : "deviceorientation";
+    window.addEventListener(eventName, handle, true);
+    return () => {
+      window.removeEventListener(eventName, handle, true);
+      lastAppliedRef.current = null;
+      setHeading(null);
+    };
+  }, [active, permissionState]);
+
+  return { heading, permissionState, requestPermission };
+}
+
+function readCompassHeading(event) {
+  // iOS Safari — already the true compass heading (clockwise from north).
+  if (typeof event.webkitCompassHeading === "number") {
+    return normalizeDegrees(event.webkitCompassHeading);
+  }
+  if (typeof event.alpha !== "number") return null;
+  if (event.absolute === false) return null;
+
+  // Spec alpha rotates counter-clockwise, so flip it to match map bearing.
+  let heading = 360 - event.alpha;
+  // Compensate for landscape / upside-down screen orientation.
+  const screenAngle =
+    (typeof screen !== "undefined" && screen.orientation && screen.orientation.angle) || 0;
+  heading -= screenAngle;
+  return normalizeDegrees(heading);
+}
+
+function normalizeDegrees(deg) {
+  const wrapped = ((deg % 360) + 360) % 360;
+  return wrapped;
 }

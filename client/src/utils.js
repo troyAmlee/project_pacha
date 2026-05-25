@@ -249,19 +249,30 @@ export function getRouteNavigationState(currentPosition, path, options = {}) {
 
   if (!startReached) {
     const toStartClosest = getClosestPointOnPath(currentPosition, toStartPath);
+    // Live remaining distance to the route start: the cached path's total
+    // length minus how far the rider has progressed along it. Updates every
+    // GPS tick instead of waiting for the next 0.1mi GraphHopper refresh.
+    const liveToStartMiles = Math.max(
+      0,
+      toStartMiles - toStartClosest.distanceAlongPathMiles
+    );
+    const liveToStartPath = compactPath([
+      toStartClosest.point,
+      ...toStartPath.slice(toStartClosest.segmentIndex + 1)
+    ]);
     const fallbackToStartCue = {
-      distanceMiles: toStartMiles,
-      primary: `Head to start in ${formatNavigationDistance(toStartMiles)}`,
+      distanceMiles: liveToStartMiles,
+      primary: `Head to start in ${formatNavigationDistance(liveToStartMiles)}`,
       secondary: "Head to the saved route start first.",
       type: "start"
     };
 
     return {
       activeLeg: "to-start",
-      activeLegDistanceMiles: toStartMiles,
+      activeLegDistanceMiles: liveToStartMiles,
       closestPoint: closest.point,
       completedPath: [],
-      cue: getRoutedStepCue(toStartPath, toStartClosest, toStartMiles, toStartSteps, {
+      cue: getRoutedStepCue(toStartPath, toStartClosest, liveToStartMiles, toStartSteps, {
         activeLeg: "to-start",
         fallbackCue: fallbackToStartCue
       }),
@@ -270,14 +281,14 @@ export function getRouteNavigationState(currentPosition, path, options = {}) {
       offRouteMiles: Number(closest.distanceMiles.toFixed(2)),
       plannedRoutePath,
       progressPercent: 0,
-      remainingMiles: toStartMiles + routeMiles,
+      remainingMiles: liveToStartMiles + routeMiles,
       remainingPath: plannedRoutePath,
       routingSource,
       segmentIndex: 0,
       snappedToRoute: false,
       startPoint,
       finishPoint,
-      toStartPath,
+      toStartPath: liveToStartPath,
       toStartSource: options.toStartSource ?? "local"
     };
   }
