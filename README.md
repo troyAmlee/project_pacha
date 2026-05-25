@@ -1,6 +1,6 @@
-# North Star Ridebook
+# Xxica
 
-North Star Ridebook is a React + Node.js MVP for a Minneapolis bike club. Riders can join the club, publish routes, upload ride photos, and contribute to a shared community journal.
+Xxica is a React + Node.js bike-collective app for Minneapolis riders. Riders join the crew, publish routes with geometry, upload ride photos, journal together, and follow saved lines from a live ride screen.
 
 ## Stack
 
@@ -30,30 +30,52 @@ npm start
 
 The backend serves the built frontend when `client/dist` exists.
 
-## Routing Provider
+## Routing and Map Providers
 
-The ride screen uses a server-side routing proxy so the client can draw bike-aware road geometry instead of only connecting saved GPS points. Valhalla is the default provider because it supports bicycle costing, turn-by-turn geometry, and map matching for recorded traces. OSRM remains available as a fallback or alternate provider.
+Xxica splits the map into two roles:
+
+- **Mapbox** renders the visible map tiles in the browser.
+- **GraphHopper** calculates bike-friendly route geometry on the server, with a custom cost model that penalizes motorways and rewards cycleways and named bike networks.
+- **Valhalla** remains a bike-safe fallback if GraphHopper is unreachable.
+- **OSRM** is available for non-bike profiles and explicit debugging, but bike routes do not use OSRM by default — a failed bike route is preferable to a freeway-heavy one.
+
+### Local dev
+
+The server loads `.env` automatically via `dotenv`. Create `server/.env` (gitignored) with:
 
 ```bash
-ROUTING_PROVIDER=valhalla
+GRAPHHOPPER_API_KEY=your_graphhopper_key
+ROUTING_PROVIDER=graphhopper
+GRAPHHOPPER_BASE_URL=https://graphhopper.com/api/1
+ALLOW_OSRM_BIKE_FALLBACK=false
 VALHALLA_BASE_URL=https://valhalla1.openstreetmap.de
 OSRM_BASE_URL=https://router.project-osrm.org
 OSRM_BIKE_PROFILE=bike
 ROUTING_TIMEOUT_MS=7000
 ```
 
-For production use, prefer a self-hosted Valhalla/OSRM instance or a managed routing provider with clear usage limits. The public defaults are suitable for local prototyping.
-
-## Map Rendering
-
-The client renders raster tiles through React Leaflet. Mapbox is the preferred visual provider; OpenStreetMap and CARTO Voyager tiles are used as a fallback if Mapbox is not configured. To enable Mapbox, set both client env vars before `npm run dev` or `npm run build`:
+Mapbox client env vars must be set at Vite build time (they are inlined into the browser bundle). Set both in `client/.env`:
 
 ```bash
 VITE_MAPBOX_TOKEN=pk.your_public_mapbox_token
 VITE_MAPBOX_STYLE_URL=mapbox://styles/mapbox/streets-v12
 ```
 
-Only the public Mapbox token should reach the browser. Server-side routing keys must stay in the server environment.
+`VITE_MAPBOX_TOKEN` is public by design and should be URL-restricted in your Mapbox account. `GRAPHHOPPER_API_KEY` must stay server-only.
+
+### Production (Render)
+
+Set the env vars on the Render service: **Service → Environment**. `GRAPHHOPPER_API_KEY` is a server runtime var. `VITE_MAPBOX_*` need to be present at *build* time, so set them before triggering **Manual Deploy → Clear build cache & deploy**.
+
+If GraphHopper and Valhalla both fail for a bike route, the client keeps the saved line instead of silently downgrading to a car-like route. Without `VITE_MAPBOX_TOKEN`, the map falls back to OpenStreetMap tiles so the app still renders.
+
+### Tests
+
+```bash
+npm test
+```
+
+Covers provider order (bike → GraphHopper, Valhalla, no OSRM), GraphHopper URL/body construction, bike-route safety validator, response normalization, and the orchestrator's fallback behavior.
 
 ## Deploy to Render (xxica.com)
 
