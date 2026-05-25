@@ -40,6 +40,7 @@ export function readRoutingConfig(env = process.env) {
     allowOsrmBikeFallback: env.ALLOW_OSRM_BIKE_FALLBACK === "true",
     graphHopperApiKey: env.GRAPHHOPPER_API_KEY || "",
     graphHopperBaseUrl: env.GRAPHHOPPER_BASE_URL || DEFAULT_GRAPHHOPPER_BASE_URL,
+    graphHopperUseCustomModel: env.GRAPHHOPPER_USE_CUSTOM_MODEL === "true",
     osrmBaseUrl: env.OSRM_BASE_URL || DEFAULT_OSRM_BASE_URL,
     osrmBikeProfile: env.OSRM_BIKE_PROFILE || "bike",
     routingProvider: env.ROUTING_PROVIDER || "graphhopper",
@@ -54,7 +55,7 @@ export function buildGraphHopperRouteUrl({ baseUrl, apiKey }) {
   return url;
 }
 
-export function buildGraphHopperRouteBody(points, profile) {
+export function buildGraphHopperRouteBody(points, profile, options = {}) {
   const body = {
     profile: toGraphHopperProfile(profile),
     points: points.map(toLngLat),
@@ -67,7 +68,13 @@ export function buildGraphHopperRouteBody(points, profile) {
   if (profile === "bike") {
     body.snap_preventions = ["motorway", "trunk", "ferry"];
     body.details = BIKE_SAFE_PATH_DETAILS;
-    body.custom_model = buildBikeFriendlyCustomModel();
+
+    // custom_model requires GraphHopper flexible mode, which is a paid feature.
+    // Opt in via GRAPHHOPPER_USE_CUSTOM_MODEL=true when on a paid plan.
+    if (options.useCustomModel) {
+      body.custom_model = buildBikeFriendlyCustomModel();
+      body["ch.disable"] = true;
+    }
   }
 
   return body;

@@ -73,8 +73,28 @@ test("GraphHopper bike body uses lng-lat points and bike-safe request options", 
     "surface",
     "bike_network"
   ]);
+});
+
+test("GraphHopper bike body omits custom_model by default (free-tier safe)", () => {
+  const body = buildGraphHopperRouteBody(points, "bike");
+
+  assert.equal(body.custom_model, undefined);
+  assert.equal(body["ch.disable"], undefined);
+});
+
+test("GraphHopper bike body opts into custom_model when explicitly enabled", () => {
+  const body = buildGraphHopperRouteBody(points, "bike", { useCustomModel: true });
+
   assert.match(JSON.stringify(body.custom_model), /road_class == MOTORWAY/);
   assert.match(JSON.stringify(body.custom_model), /bike_network != MISSING/);
+  assert.equal(body["ch.disable"], true);
+});
+
+test("non-bike GraphHopper requests omit custom_model and ch.disable", () => {
+  const body = buildGraphHopperRouteBody(points, "foot", { useCustomModel: true });
+
+  assert.equal(body.custom_model, undefined);
+  assert.equal(body["ch.disable"], undefined);
 });
 
 test("GraphHopper match URL carries bike profile and unencoded points option", () => {

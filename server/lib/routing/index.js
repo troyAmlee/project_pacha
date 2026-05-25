@@ -43,7 +43,8 @@ function buildRouteProviders(config) {
       fetchGraphHopperRoute(points, profile, {
         apiKey: config.graphHopperApiKey,
         baseUrl: config.graphHopperBaseUrl,
-        timeoutMs: config.routingTimeoutMs
+        timeoutMs: config.routingTimeoutMs,
+        useCustomModel: config.graphHopperUseCustomModel
       }),
     valhalla: (points, profile) =>
       fetchValhallaRoute(points, profile, {

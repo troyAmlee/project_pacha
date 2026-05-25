@@ -20,7 +20,11 @@ export async function fetchGraphHopperRoute(points, profile, options) {
     requestOptions: {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(buildGraphHopperRouteBody(points, profile))
+      body: JSON.stringify(
+        buildGraphHopperRouteBody(points, profile, {
+          useCustomModel: options.useCustomModel
+        })
+      )
     }
   });
 

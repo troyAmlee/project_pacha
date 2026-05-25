@@ -35,7 +35,7 @@ The backend serves the built frontend when `client/dist` exists.
 Xxica splits the map into two roles:
 
 - **Mapbox** renders the visible map tiles in the browser.
-- **GraphHopper** calculates bike-friendly route geometry on the server, with a custom cost model that penalizes motorways and rewards cycleways and named bike networks.
+- **GraphHopper** calculates bike-friendly route geometry on the server using its built-in `bike` profile (avoids motorways and trunk roads). With a paid GraphHopper plan you can also opt in to a custom cost model that further penalizes primary/secondary roads and rewards cycleways and named bike networks (see `GRAPHHOPPER_USE_CUSTOM_MODEL` below).
 - **Valhalla** remains a bike-safe fallback if GraphHopper is unreachable.
 - **OSRM** is available for non-bike profiles and explicit debugging, but bike routes do not use OSRM by default — a failed bike route is preferable to a freeway-heavy one.
 
@@ -47,6 +47,9 @@ The server loads `.env` automatically via `dotenv`. Create `server/.env` (gitign
 GRAPHHOPPER_API_KEY=your_graphhopper_key
 ROUTING_PROVIDER=graphhopper
 GRAPHHOPPER_BASE_URL=https://graphhopper.com/api/1
+# Set to true ONLY on a paid GraphHopper plan. The free tier rejects custom_model
+# because it requires flexible mode. Default (omitted/false) is free-tier safe.
+GRAPHHOPPER_USE_CUSTOM_MODEL=false
 ALLOW_OSRM_BIKE_FALLBACK=false
 VALHALLA_BASE_URL=https://valhalla1.openstreetmap.de
 OSRM_BASE_URL=https://router.project-osrm.org
