@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "../i18n";
 
 export default function FavoriteButton({ routeId }) {
   const { member, updateMember } = useAuth();
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
 
   if (!member) {
@@ -33,7 +35,7 @@ export default function FavoriteButton({ routeId }) {
       disabled={busy}
       aria-pressed={isFavorite}
     >
-      {isFavorite ? "Saved route" : "Save route"}
+      {busy ? t("favorite.busy") : isFavorite ? t("favorite.remove") : t("favorite.add")}
     </button>
   );
 }

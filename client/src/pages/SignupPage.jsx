@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import FormFeedback from "../components/FormFeedback";
+import LanguageToggle from "../components/LanguageToggle";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
 import { useForm } from "../hooks/useForm";
+import { useTranslation } from "../i18n";
 
 const emptySignupForm = {
   name: "",
@@ -18,6 +20,7 @@ export default function SignupPage() {
   const { signup } = useAuth();
   const { loadBootstrap } = useClubData();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { values, handleChange } = useForm(emptySignupForm);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -29,7 +32,6 @@ export default function SignupPage() {
 
     try {
       await signup(values);
-      // Refresh club data so the new rider appears on the roster immediately.
       await loadBootstrap();
       navigate("/", { replace: true });
     } catch (error) {
@@ -41,85 +43,88 @@ export default function SignupPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link className="brandmark" to="/">
-          North Star Ridebook
-        </Link>
-        <p className="section-kicker">Join the club</p>
-        <h1 className="auth-title">Create your rider profile.</h1>
+        <div className="auth-card__top">
+          <Link className="brandmark" to="/">
+            Xxica
+          </Link>
+          <LanguageToggle />
+        </div>
+        <p className="section-kicker">{t("auth.signupKicker")}</p>
+        <h1 className="auth-title">{t("auth.signupTitle")}</h1>
 
         <form className="editor editor--warm" onSubmit={handleSubmit}>
           <label>
-            Rider name
+            {t("auth.fieldName")}
             <input
               name="name"
               value={values.name}
               onChange={handleChange}
-              placeholder="Asha Patel"
+              placeholder={t("auth.fieldNamePlaceholder")}
               autoComplete="name"
               required
             />
           </label>
           <label>
-            Email
+            {t("auth.fieldEmail")}
             <input
               name="email"
               type="email"
               value={values.email}
               onChange={handleChange}
-              placeholder="rider@northstar.club"
+              placeholder={t("auth.fieldEmailPlaceholder")}
               autoComplete="email"
               required
             />
           </label>
           <label>
-            Password
+            {t("auth.fieldPassword")}
             <input
               name="password"
               type="password"
               value={values.password}
               onChange={handleChange}
-              placeholder="At least 8 characters"
+              placeholder={t("auth.fieldPasswordPlaceholderSignup")}
               autoComplete="new-password"
               minLength={8}
               required
             />
           </label>
           <label>
-            Neighborhood
+            {t("auth.fieldNeighborhood")}
             <input
               name="neighborhood"
               value={values.neighborhood}
               onChange={handleChange}
-              placeholder="Longfellow"
+              placeholder={t("auth.fieldNeighborhoodPlaceholder")}
               required
             />
           </label>
           <label>
-            Ride pace
+            {t("auth.fieldPace")}
             <select name="pace" value={values.pace} onChange={handleChange}>
-              <option value="easy">Easy cruise</option>
-              <option value="steady">Steady spin</option>
-              <option value="fast">Fast group</option>
+              <option value="easy">{t("pace.easy")}</option>
+              <option value="steady">{t("pace.steady")}</option>
+              <option value="fast">{t("pace.fast")}</option>
             </select>
           </label>
           <label>
-            What do you ride for?
+            {t("auth.fieldBio")}
             <textarea
               name="bio"
               rows="4"
               value={values.bio}
               onChange={handleChange}
-              placeholder="Bridge laps before work, coffee rides on weekends, and fall trail days."
+              placeholder={t("auth.fieldBioPlaceholder")}
             />
           </label>
           <button className="button button--primary" type="submit" disabled={busy}>
-            {busy ? "Creating account..." : "Create account"}
+            {busy ? t("auth.signupBusy") : t("auth.signupCta")}
           </button>
           <FormFeedback feedback={feedback} />
         </form>
 
         <p className="auth-switch">
-          Already have an account? <Link to="/login">Log in</Link>
+          {t("auth.signupSwitchPrompt")} <Link to="/login">{t("auth.signupSwitchAction")}</Link>
         </p>
       </div>
     </div>

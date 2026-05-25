@@ -7,6 +7,7 @@ import SuggestedRoutes from "../components/SuggestedRoutes";
 import TopBar from "../components/TopBar";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
+import { useTranslation } from "../i18n";
 import {
   GPS_CAPTURE_OPTIONS,
   computePathMiles,
@@ -31,6 +32,7 @@ export default function RideScreenPage() {
   const navigate = useNavigate();
   const { member } = useAuth();
   const { data, loading, loadBootstrap } = useClubData();
+  const { t } = useTranslation();
   const [currentPosition, setCurrentPosition] = useState(null);
   const [currentAccuracyMeters, setCurrentAccuracyMeters] = useState(null);
   const [trail, setTrail] = useState([]);
@@ -43,7 +45,7 @@ export default function RideScreenPage() {
   const [routedToStart, setRoutedToStart] = useState(null);
   const [routingStatus, setRoutingStatus] = useState("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(false);
-  const [voiceStatus, setVoiceStatus] = useState("Voice guidance off");
+  const [voiceStatus, setVoiceStatus] = useState(t("rideScreen.voiceStatusOff"));
   const [directionsOpen, setDirectionsOpen] = useState(false);
   const [feedback, setFeedback] = useState(
     location.state?.success ? { type: "success", message: location.state.success } : null
@@ -88,8 +90,8 @@ export default function RideScreenPage() {
     routedToStart?.source ?? routedRoute?.source
   );
   const directionSections = useMemo(
-    () => buildDirectionSections({ route, routedRoute, routedToStart }),
-    [route, routedRoute, routedToStart]
+    () => buildDirectionSections({ route, routedRoute, routedToStart, t }),
+    [route, routedRoute, routedToStart, t]
   );
   const totalDirectionSteps = directionSections.reduce(
     (total, section) => total + section.steps.length,
@@ -99,29 +101,26 @@ export default function RideScreenPage() {
   const routeStatus = useMemo(() => {
     if (offRouteMiles === null) {
       return {
-        headline: navigationState?.cue.primary ?? (tracking ? "Waiting for GPS lock" : "Guidance ready"),
+        headline:
+          navigationState?.cue.primary ??
+          (tracking ? t("rideScreen.headlineWaitingGps") : t("rideScreen.headlineGuidanceReady")),
         detail: tracking
-          ? "Your location will appear once the browser locks onto your position."
-          : "Start GPS guidance when you are at the route start, or run the timer if you only want to log the ride."
+          ? t("rideScreen.detailWaitingGps")
+          : t("rideScreen.detailGuidanceReady")
       };
     }
 
     if (navigationState?.activeLeg === "to-start") {
-      const toStartProviderLabel = formatRoutingProviderLabel(navigationState.toStartSource);
-
       return {
         headline: navigationState.cue.primary,
-        detail:
-          toStartProviderLabel
-            ? `${toStartProviderLabel} routing is taking you to the saved start first. The route-to-finish leg starts once you reach it.`
-            : "Head to the saved start first. The route-to-finish leg starts once you reach it."
+        detail: t("rideScreen.detailToStartFallback")
       };
     }
 
     if (navigationState && !navigationState.snappedToRoute) {
       return {
-        headline: "Return to route",
-        detail: `You are ${formatMiles(offRouteMiles)} from the saved line. Move back toward the highlighted route.`
+        headline: t("rideScreen.headlineReturnRoute"),
+        detail: t("rideScreen.detailReturn", { miles: formatMiles(offRouteMiles) })
       };
     }
 
@@ -144,16 +143,16 @@ export default function RideScreenPage() {
 
     if (offRouteMiles <= 0.15) {
       return {
-        headline: "Slight drift",
-        detail: "You are a little off the saved line. Use the map to move back toward the route before the gap grows."
+        headline: t("rideScreen.headlineSlightDrift"),
+        detail: t("rideScreen.detailSlightDrift")
       };
     }
 
     return {
-      headline: "Route check needed",
-      detail: "You are clearly off the saved line. Pause, look at the map, and head back toward the highlighted route."
+      headline: t("rideScreen.headlineRouteCheck"),
+      detail: t("rideScreen.detailRouteCheck")
     };
-  }, [navigationState, offRouteMiles, tracking]);
+  }, [navigationState, offRouteMiles, tracking, t]);
 
   useEffect(() => {
     if (!rideStartedAt) {
@@ -285,8 +284,8 @@ export default function RideScreenPage() {
   if (loading) {
     return (
       <div className="loading-state">
-        <p className="loading-kicker">North Star Ridebook</p>
-        <h1>Loading the ride screen...</h1>
+        <p className="loading-kicker">Xxica</p>
+        <h1>{t("rideScreen.loading")}</h1>
       </div>
     );
   }
@@ -296,10 +295,10 @@ export default function RideScreenPage() {
       <div className="app-shell">
         <TopBar minimal />
         <div className="loading-state loading-state--error">
-          <p className="loading-kicker">North Star Ridebook</p>
-          <h1>That route is not on the board.</h1>
+          <p className="loading-kicker">Xxica</p>
+          <h1>{t("rideScreen.notOnBoard")}</h1>
           <Link className="button button--primary" to="/">
-            Back to route board
+            {t("routeBuilder.backToBoard")}
           </Link>
         </div>
       </div>
@@ -324,7 +323,10 @@ export default function RideScreenPage() {
       setElapsedMinutes(0);
       setFeedback({
         type: "success",
-        message: `Ride logged: ${formatMiles(payload.ride.distanceMiles)} in ${formatDurationMinutes(payload.ride.durationMinutes)}.`
+        message: t("rideScreen.rideLoggedFeedback", {
+          miles: formatMiles(payload.ride.distanceMiles),
+          duration: formatDurationMinutes(payload.ride.durationMinutes)
+        })
       });
     } catch (error) {
       setFeedback({ type: "error", message: error.message });
@@ -339,7 +341,7 @@ export default function RideScreenPage() {
     }
 
     const confirmed = window.confirm(
-      `Delete "${route.title}"? This removes it from the route board and any group pins.`
+      t("rideScreen.confirmDelete", { title: route.title })
     );
 
     if (!confirmed) {
@@ -355,7 +357,7 @@ export default function RideScreenPage() {
       await loadBootstrap();
       navigate("/", {
         replace: true,
-        state: { success: "Route deleted." }
+        state: { success: t("rideScreen.routeDeletedFeedback") }
       });
     } catch (error) {
       setFeedback({ type: "error", message: error.message });
@@ -366,7 +368,7 @@ export default function RideScreenPage() {
 
   function startTracking() {
     if (!navigator.geolocation) {
-      setFeedback({ type: "error", message: "This browser does not support live geolocation." });
+      setFeedback({ type: "error", message: t("rideScreen.geoUnsupported") });
       return;
     }
 
@@ -399,10 +401,7 @@ export default function RideScreenPage() {
         stopTracking();
         setFeedback({
           type: "error",
-          message:
-            error.code === 1
-              ? "Location access was denied. Allow geolocation for this site to follow the route live."
-              : "Live route tracking failed. Try again in a stronger GPS signal."
+          message: error.code === 1 ? t("rideScreen.trackDenied") : t("rideScreen.trackFailed")
         });
       },
       GPS_CAPTURE_OPTIONS
@@ -421,22 +420,22 @@ export default function RideScreenPage() {
   function toggleVoiceNavigation() {
     if (voiceEnabled) {
       setVoiceEnabled(false);
-      setVoiceStatus("Voice guidance off");
+      setVoiceStatus(t("rideScreen.voiceStatusOff"));
       lastSpokenCueRef.current = "";
       cancelVoiceNavigation();
       return;
     }
 
     if (!supportsVoiceNavigation()) {
-      const message = "This browser does not support spoken navigation prompts.";
+      const message = t("rideScreen.voiceUnsupported");
       setVoiceStatus(message);
       setFeedback({ type: "error", message });
       return;
     }
 
     setVoiceEnabled(true);
-    setVoiceStatus("Voice guidance on. Turn prompts will announce as they approach.");
-    speakNavigationInstruction("Voice guidance on.");
+    setVoiceStatus(t("rideScreen.voiceStatusOn"));
+    speakNavigationInstruction(t("rideScreen.voiceStatusOn"));
   }
 
   return (
@@ -445,16 +444,13 @@ export default function RideScreenPage() {
 
       <section className="content-section ride-screen">
         <div className="section-heading">
-          <p className="section-kicker">Ride screen</p>
+          <p className="section-kicker">{t("rideScreen.kicker")}</p>
           <h1>{route.title}</h1>
-          <p className="ride-screen__lead">
-            Follow the saved line, watch your live position, and log a completed ride when you are
-            done.
-          </p>
+          <p className="ride-screen__lead">{t("rideScreen.lead")}</p>
           {isOwner ? (
             <div className="ride-screen__owner-actions">
               <Link className="button button--outline button--sm" to={`/routes/${route.id}/edit`}>
-                Edit route
+                {t("rideScreen.editRoute")}
               </Link>
               <button
                 className="button button--outline button--sm"
@@ -462,7 +458,7 @@ export default function RideScreenPage() {
                 onClick={() => void handleDeleteRoute()}
                 type="button"
               >
-                {deleting ? "Deleting route..." : "Delete route"}
+                {deleting ? t("rideScreen.deletingRoute") : t("rideScreen.deleteRoute")}
               </button>
             </div>
           ) : null}
@@ -489,36 +485,44 @@ export default function RideScreenPage() {
 
           <div className="ride-screen__sidebar">
             <div className="editor editor--paper ride-status-card">
-              <p className="group-card__eyebrow">Live route cue</p>
+              <p className="group-card__eyebrow">{t("rideScreen.cueKicker")}</p>
               <h3>{routeStatus.headline}</h3>
               <p>{routeStatus.detail}</p>
               <div className="ride-status-card__chips">
-                <span className="ride-status-card__chip">Start: {route.start}</span>
-                <span className="ride-status-card__chip">Terrain: {route.terrain}</span>
+                <span className="ride-status-card__chip">{t("rideScreen.cueStartLabel", { start: route.start })}</span>
+                <span className="ride-status-card__chip">
+                  {t("rideScreen.cueTerrainLabel", {
+                    terrain: t(`terrain.${route.terrain}`) || route.terrain
+                  })}
+                </span>
                 {offRouteMiles === null ? null : (
                   <span className="ride-status-card__chip">
-                    Distance from line: {formatMiles(offRouteMiles)}
+                    {t("rideScreen.cueDistanceFromLine", { miles: formatMiles(offRouteMiles) })}
                   </span>
                 )}
                 {navigationState ? (
                   <span className="ride-status-card__chip">
-                    Remaining: {formatNavigationDistance(navigationState.remainingMiles)}
+                    {t("rideScreen.cueRemaining", {
+                      miles: formatNavigationDistance(navigationState.remainingMiles)
+                    })}
                   </span>
                 ) : null}
                 {navigationState?.activeLegDistanceMiles ? (
                   <span className="ride-status-card__chip">
-                    Active leg: {formatNavigationDistance(navigationState.activeLegDistanceMiles)}
+                    {t("rideScreen.cueActiveLeg", {
+                      miles: formatNavigationDistance(navigationState.activeLegDistanceMiles)
+                    })}
                   </span>
                 ) : null}
                 <span className="ride-status-card__chip">
                   {routingProviderLabel
-                    ? `${routingProviderLabel} routing`
+                    ? t("rideScreen.cueRoutingWith", { provider: routingProviderLabel })
                     : routingStatus === "loading"
-                      ? "Routing roads..."
-                      : "Saved line fallback"}
+                      ? t("rideScreen.cueRoutingLoading")
+                      : t("rideScreen.cueRoutingFallback")}
                 </span>
                 {routedRoute?.steps?.length || routedToStart?.steps?.length ? (
-                  <span className="ride-status-card__chip">Street-name cues</span>
+                  <span className="ride-status-card__chip">{t("rideScreen.cueStreetCues")}</span>
                 ) : null}
               </div>
               <div className="ride-status-card__actions">
@@ -529,14 +533,14 @@ export default function RideScreenPage() {
                   onClick={() => setDirectionsOpen((current) => !current)}
                   type="button"
                 >
-                  {directionsOpen ? "Hide directions" : "Directions"}
+                  {directionsOpen ? t("rideScreen.directionsHide") : t("rideScreen.directionsShow")}
                 </button>
                 <button
                   className={`button button--outline button--sm${voiceEnabled ? " is-active" : ""}`}
                   onClick={toggleVoiceNavigation}
                   type="button"
                 >
-                  {voiceEnabled ? "Voice on" : "Voice navigation"}
+                  {voiceEnabled ? t("rideScreen.voiceOn") : t("rideScreen.voiceOff")}
                 </button>
                 <span>{voiceStatus}</span>
               </div>
@@ -555,38 +559,35 @@ export default function RideScreenPage() {
 
             <div className="ride-screen__stats">
               <div>
-                <span className="stat-label">Route length</span>
+                <span className="stat-label">{t("rideScreen.statRouteLength")}</span>
                 <strong>{formatMiles(route.distanceMiles)}</strong>
               </div>
               <div>
-                <span className="stat-label">Elapsed</span>
+                <span className="stat-label">{t("rideScreen.statElapsed")}</span>
                 <strong>{formatDurationMinutes(elapsedMinutes)}</strong>
               </div>
               <div>
-                <span className="stat-label">Distance from line</span>
+                <span className="stat-label">{t("rideScreen.statDistanceFromLine")}</span>
                 <strong>{offRouteMiles === null ? "--" : formatMiles(offRouteMiles)}</strong>
               </div>
               <div>
-                <span className="stat-label">Your trail</span>
+                <span className="stat-label">{t("rideScreen.statTrail")}</span>
                 <strong>{formatMiles(trailMiles)}</strong>
               </div>
             </div>
 
             <div className="editor editor--warm ride-screen__card">
-              <p className="locked-note__lead">Live ride controls</p>
-              <p>
-                Start GPS guidance when you roll out from the saved start. If you just want to log
-                the effort, you can run the timer without live location.
-              </p>
+              <p className="locked-note__lead">{t("rideScreen.controlsTitle")}</p>
+              <p>{t("rideScreen.controlsBody")}</p>
 
               <div className="locked-note__actions">
                 {tracking ? (
                   <button className="button button--outline button--sm" onClick={stopTracking} type="button">
-                    Pause GPS guidance
+                    {t("rideScreen.pauseGps")}
                   </button>
                 ) : (
                   <button className="button button--primary button--sm" onClick={startTracking} type="button">
-                    Start GPS guidance
+                    {t("rideScreen.startGps")}
                   </button>
                 )}
 
@@ -599,15 +600,12 @@ export default function RideScreenPage() {
                     }}
                     type="button"
                   >
-                    Start ride without GPS
+                    {t("rideScreen.startWithout")}
                   </button>
                 ) : null}
               </div>
 
-              <p className="ride-screen__support-note">
-                Geolocation works on localhost in development. On a deployed site it will need
-                HTTPS before browsers will share live position.
-              </p>
+              <p className="ride-screen__support-note">{t("rideScreen.supportNote")}</p>
 
               <button
                 className="button button--primary"
@@ -615,7 +613,7 @@ export default function RideScreenPage() {
                 onClick={() => void handleCompleteRide()}
                 type="button"
               >
-                {busy ? "Logging ride..." : "Log finished ride"}
+                {busy ? t("rideScreen.completing") : t("rideScreen.completeRide")}
               </button>
 
               <FormFeedback feedback={feedback} />
@@ -623,18 +621,19 @@ export default function RideScreenPage() {
 
             <div className="ride-screen__meta">
               <p>
-                <strong>Start:</strong> {route.start}
+                <strong>{t("rideScreen.metaStart")}:</strong> {route.start}
               </p>
               <p>
-                <strong>Terrain:</strong> {route.terrain}
+                <strong>{t("rideScreen.metaTerrain")}:</strong>{" "}
+                {t(`terrain.${route.terrain}`) || route.terrain}
               </p>
               <p>
-                <strong>Notes:</strong> {route.notes}
+                <strong>{t("rideScreen.metaNotes")}:</strong> {route.notes}
               </p>
             </div>
 
             <div className="ride-screen__groups">
-              <p className="section-kicker">Pinned by groups</p>
+              <p className="section-kicker">{t("rideScreen.pinnedByGroups")}</p>
               {groupsUsingRoute.length ? (
                 groupsUsingRoute.map((group) => (
                   <Link className="group-inline-link" key={group.id} to={`/groups/${group.id}`}>
@@ -642,16 +641,16 @@ export default function RideScreenPage() {
                   </Link>
                 ))
               ) : (
-                <p className="empty-note">No groups have pinned this route yet.</p>
+                <p className="empty-note">{t("rideScreen.pinnedEmpty")}</p>
               )}
             </div>
 
             <SuggestedRoutes
               currentRouteId={route.id}
-              description="When this ride is done, queue up the next route without going back to a blank board."
+              description={t("rideScreen.suggestedDescription")}
               member
               routes={data?.routes ?? []}
-              title="Suggested next rides"
+              title={t("rideScreen.suggestedTitle")}
             />
           </div>
         </div>
@@ -668,6 +667,7 @@ function DirectionsPanel({
   routingStatus,
   totalDirectionSteps
 }) {
+  const { t } = useTranslation();
   return (
     <aside
       aria-labelledby="directions-panel-title"
@@ -676,36 +676,34 @@ function DirectionsPanel({
     >
       <div className="directions-panel__header">
         <div>
-          <p className="group-card__eyebrow">Turn-by-turn</p>
-          <h2 id="directions-panel-title">Directions</h2>
+          <p className="group-card__eyebrow">{t("directions.kicker")}</p>
+          <h2 id="directions-panel-title">{t("directions.title")}</h2>
           <p>
             {navigationState?.cue?.primary ??
-              (routingStatus === "loading"
-                ? "Loading street directions."
-                : "Start GPS guidance to see the active step.")}
+              (routingStatus === "loading" ? t("directions.loading") : t("directions.idle"))}
           </p>
         </div>
         <button
-          aria-label="Hide directions"
+          aria-label={t("directions.hide")}
           className="directions-panel__close"
           onClick={onClose}
           type="button"
         >
-          Hide
+          {t("directions.hide")}
         </button>
       </div>
 
       <div className="directions-panel__summary">
-        <span>{totalDirectionSteps} steps</span>
+        <span>{t("directions.steps", { count: totalDirectionSteps })}</span>
         <span>
           {routingProviderLabel
-            ? `${routingProviderLabel} routing`
+            ? t("rideScreen.cueRoutingWith", { provider: routingProviderLabel })
             : routingStatus === "loading"
-              ? "Routing roads"
-              : "Saved line fallback"}
+              ? t("rideScreen.cueRoutingLoading")
+              : t("rideScreen.cueRoutingFallback")}
         </span>
         {navigationState ? (
-          <span>{formatNavigationDistance(navigationState.remainingMiles)} left</span>
+          <span>{t("rideScreen.cueRemaining", { miles: formatNavigationDistance(navigationState.remainingMiles) })}</span>
         ) : null}
       </div>
 
@@ -737,7 +735,7 @@ function DirectionsPanel({
                     </div>
                     <div className="directions-panel__step-meta">
                       <span>{step.distanceLabel}</span>
-                      {active ? <b>Current</b> : null}
+                      {active ? <b>{t("directions.current")}</b> : null}
                     </div>
                   </li>
                 );
@@ -762,14 +760,14 @@ function formatRoutingProviderLabel(source) {
   return null;
 }
 
-function buildDirectionSections({ route, routedRoute, routedToStart }) {
+function buildDirectionSections({ route, routedRoute, routedToStart, t }) {
   if (!route) {
     return [];
   }
 
   const sections = [];
-  const toStartSteps = normalizeDirectionSteps("to-start", routedToStart?.steps);
-  const routeSteps = normalizeDirectionSteps("route", routedRoute?.steps);
+  const toStartSteps = normalizeDirectionSteps("to-start", routedToStart?.steps, t);
+  const routeSteps = normalizeDirectionSteps("route", routedRoute?.steps, t);
 
   if (toStartSteps.length) {
     sections.push({
@@ -777,7 +775,7 @@ function buildDirectionSections({ route, routedRoute, routedToStart }) {
       leg: "to-start",
       summary: formatDirectionSummary(routedToStart?.distanceMiles, routedToStart?.durationMinutes),
       steps: toStartSteps,
-      title: "To route start"
+      title: t("directions.sectionToStart")
     });
   }
 
@@ -790,7 +788,7 @@ function buildDirectionSections({ route, routedRoute, routedToStart }) {
         routedRoute?.durationMinutes
       ),
       steps: routeSteps,
-      title: "Route to finish"
+      title: t("directions.sectionRoute")
     });
   }
 
@@ -801,38 +799,38 @@ function buildDirectionSections({ route, routedRoute, routedToStart }) {
       summary: formatDirectionSummary(route.distanceMiles),
       steps: [
         {
-          detail: "Begin at the saved start point.",
-          distanceLabel: "now",
-          instruction: `Start at ${route.start}`,
+          detail: t("directions.detailFallback"),
+          distanceLabel: formatNavigationDistance(0.005),
+          instruction: t("directions.stepSavedStart", { start: route.start }),
           key: "saved-line-start",
           kind: "depart",
           originalIndex: -1
         },
         {
-          detail: "Street directions will appear here when road routing is available.",
+          detail: t("directions.detailSavedFollow"),
           distanceLabel: formatNavigationDistance(route.distanceMiles),
-          instruction: "Follow the highlighted route line",
+          instruction: t("directions.stepSavedFollow"),
           key: "saved-line-follow",
           kind: "straight",
           originalIndex: -2
         },
         {
-          detail: "Finish at the end of the saved route.",
-          distanceLabel: "finish",
-          instruction: "Arrive at finish",
+          detail: t("directions.detailSavedFinish"),
+          distanceLabel: formatNavigationDistance(0),
+          instruction: t("directions.stepSavedArrive"),
           key: "saved-line-arrive",
           kind: "arrive",
           originalIndex: -3
         }
       ],
-      title: "Saved route line"
+      title: t("directions.sectionSaved")
     });
   }
 
   return sections;
 }
 
-function normalizeDirectionSteps(leg, steps) {
+function normalizeDirectionSteps(leg, steps, t) {
   if (!Array.isArray(steps)) {
     return [];
   }
@@ -849,7 +847,7 @@ function normalizeDirectionSteps(leg, steps) {
       const detailParts = [];
 
       if (streetName && !/unnamed/i.test(streetName)) {
-        detailParts.push(`Via ${streetName}`);
+        detailParts.push(t("directions.detailVia", { street: streetName }));
       }
 
       if (durationLabel) {
@@ -857,7 +855,7 @@ function normalizeDirectionSteps(leg, steps) {
       }
 
       return {
-        detail: detailParts.join(" - ") || "Continue following the route.",
+        detail: detailParts.join(" · ") || t("directions.detailContinue"),
         distanceLabel,
         instruction,
         key: `${leg}-${index}-${step.type || "step"}`,

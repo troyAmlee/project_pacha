@@ -775,7 +775,7 @@ app.use((error, _request, response, _next) => {
 const port = Number(process.env.PORT || 3001);
 
 app.listen(port, () => {
-  console.log(`North Star Ridebook server running on port ${port}`);
+  console.log(`Xxica server running on port ${port}`);
 });
 
 function buildBootstrapPayload(store) {

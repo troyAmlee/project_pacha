@@ -1,12 +1,14 @@
-export function formatDate(value) {
-  return new Intl.DateTimeFormat("en-US", {
+export function formatDate(value, lang = "en") {
+  const locale = lang === "es" ? "es-MX" : "en-US";
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric"
   }).format(new Date(value));
 }
 
-export function formatDateTime(value) {
-  return new Intl.DateTimeFormat("en-US", {
+export function formatDateTime(value, lang = "en") {
+  const locale = lang === "es" ? "es-MX" : "en-US";
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -356,29 +358,29 @@ export function isGreenwayRoute(route) {
 export function getRouteTheme(route) {
   if (isGreenwayRoute(route)) {
     return {
-      accent: "#2e7d4f",
-      accentSoft: "rgba(46, 125, 79, 0.18)",
-      lineGlow: "rgba(110, 182, 103, 0.36)",
-      badge: "Greenway line",
+      accent: "#06a77d",
+      accentSoft: "rgba(6, 167, 125, 0.18)",
+      lineGlow: "rgba(6, 167, 125, 0.36)",
+      badgeKey: "routeMap.badgeGreenway",
       guideLabel: "Midtown Greenway"
     };
   }
 
   if (route?.terrain === "gravel" || route?.terrain === "mixed surface") {
     return {
-      accent: "#8b5a2b",
-      accentSoft: "rgba(139, 90, 43, 0.16)",
-      lineGlow: "rgba(205, 160, 110, 0.28)",
-      badge: "Mixed surface",
+      accent: "#f4a261",
+      accentSoft: "rgba(244, 162, 97, 0.18)",
+      lineGlow: "rgba(244, 162, 97, 0.32)",
+      badgeKey: "routeMap.badgeMixed",
       guideLabel: "Long pull"
     };
   }
 
   return {
-    accent: "#c35f37",
-    accentSoft: "rgba(195, 95, 55, 0.16)",
-    lineGlow: "rgba(195, 95, 55, 0.22)",
-    badge: "City route",
+    accent: "#e63946",
+    accentSoft: "rgba(230, 57, 70, 0.16)",
+    lineGlow: "rgba(230, 57, 70, 0.22)",
+    badgeKey: "routeMap.badgeCity",
     guideLabel: "River loop"
   };
 }

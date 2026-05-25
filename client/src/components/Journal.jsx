@@ -3,6 +3,7 @@ import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
 import { useForm } from "../hooks/useForm";
+import { useTranslation } from "../i18n";
 import { formatDate } from "../utils";
 import FormFeedback from "./FormFeedback";
 import LockedNote from "./LockedNote";
@@ -16,6 +17,7 @@ const emptyPostForm = {
 export default function Journal() {
   const { member } = useAuth();
   const { data, addItem } = useClubData();
+  const { t, lang } = useTranslation();
   const { values, handleChange, reset } = useForm(emptyPostForm);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -29,7 +31,10 @@ export default function Journal() {
       const payload = await api.postJson("/api/posts", values);
       addItem("posts", payload.post, payload.stats);
       reset();
-      setFeedback({ type: "success", message: `Journal post published: ${payload.post.title}.` });
+      setFeedback({
+        type: "success",
+        message: t("home.journalSuccess", { title: payload.post.title })
+      });
     } catch (error) {
       setFeedback({ type: "error", message: error.message });
     } finally {
@@ -40,45 +45,42 @@ export default function Journal() {
   return (
     <section className="content-section content-section--split" id="journal">
       <div className="section-heading">
-        <p className="section-kicker">Shared journal</p>
-        <h2>Give the club a running blog space for ride reports, advocacy notes, and weekend plans.</h2>
-        <p>
-          This is the editorial layer of the app: longer updates, recurring series, and the
-          voice of the group over time.
-        </p>
+        <p className="section-kicker">{t("home.journalKicker")}</p>
+        <h2>{t("home.journalTitle")}</h2>
+        <p>{t("home.journalLead")}</p>
       </div>
 
       <div className="section-body section-body--split">
         {member ? (
           <form className="editor editor--paper" onSubmit={handleSubmit}>
             <label>
-              Post title
+              {t("home.journalFormTitle")}
               <input
                 name="title"
                 value={values.title}
                 onChange={handleChange}
-                placeholder="Sunday social route notes"
+                placeholder={t("home.journalFormTitlePlaceholder")}
                 required
               />
             </label>
             <label>
-              Story
+              {t("home.journalFormBody")}
               <textarea
                 name="body"
                 rows="7"
                 value={values.body}
                 onChange={handleChange}
-                placeholder="Share route conditions, a ride recap, a volunteer note, or what the club should know before next weekend."
+                placeholder={t("home.journalFormBodyPlaceholder")}
                 required
               />
             </label>
             <button className="button button--primary" type="submit" disabled={busy}>
-              {busy ? "Publishing..." : "Publish entry"}
+              {busy ? t("home.journalFormBusy") : t("home.journalFormSubmit")}
             </button>
             <FormFeedback feedback={feedback} />
           </form>
         ) : (
-          <LockedNote action="publish a journal entry" />
+          <LockedNote action="locked.actionWriteJournal" />
         )}
 
         <div className="stack-list stack-list--journal">
@@ -86,8 +88,8 @@ export default function Journal() {
             <article className="journal-entry" key={post.id}>
               <p className="journal-entry__meta">
                 <RiderLink riderId={post.createdById} name={post.createdBy} />
-                {" - "}
-                {formatDate(post.createdAt)}
+                {" · "}
+                {formatDate(post.createdAt, lang)}
               </p>
               <h3>{post.title}</h3>
               <p>{post.body}</p>

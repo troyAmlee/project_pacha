@@ -9,6 +9,7 @@ import {
   useMap,
   useMapEvents
 } from "react-leaflet";
+import { useTranslation } from "../i18n";
 import { getMapTileConfig } from "../mapTiles";
 import {
   formatNavigationDistance,
@@ -39,6 +40,7 @@ export default function RouteMap({
   showGreenwayGuide = false,
   showLegend = true
 }) {
+  const { t } = useTranslation();
   const center = getPathCenter(path.length ? path : currentPosition ? [currentPosition] : []);
   const routeTheme = getRouteTheme({ title: routeName, start: startLabel, terrain });
   const guideVisible = showGreenwayGuide || terrain === "greenway";
@@ -54,13 +56,13 @@ export default function RouteMap({
     computedNavigationState?.cue ??
     (tracking
       ? {
-          primary: "Waiting for GPS lock",
-          secondary: "The map will follow once your position is available.",
+          primary: t("rideScreen.headlineWaitingGps"),
+          secondary: t("rideScreen.detailWaitingGps"),
           type: "start"
         }
       : {
-          primary: "Ready to navigate",
-          secondary: "Start GPS guidance to follow the saved route.",
+          primary: t("rideScreen.headlineGuidanceReady"),
+          secondary: t("rideScreen.detailGuidanceReady"),
           type: "start"
         });
   const remainingLabel = computedNavigationState
@@ -69,23 +71,34 @@ export default function RouteMap({
   const progressPercent = Math.round(computedNavigationState?.progressPercent ?? 0);
   const activeLegLabel =
     computedNavigationState?.activeLeg === "to-start"
-      ? `${formatNavigationDistance(computedNavigationState.activeLegDistanceMiles)} to start`
-      : `${progressPercent}% complete`;
-  const cueDirection = /left/i.test(navigationCue.primary)
+      ? t("rideScreen.cueActiveLeg", {
+          miles: formatNavigationDistance(computedNavigationState.activeLegDistanceMiles)
+        })
+      : `${progressPercent}%`;
+  const cueDirection = /left|izquierda/i.test(navigationCue.primary)
     ? "left"
-    : /right/i.test(navigationCue.primary)
+    : /right|derecha/i.test(navigationCue.primary)
       ? "right"
       : navigationCue.type;
   const navigationIcon = useMemo(
     () => createNavigationIcon(computedNavigationState?.headingDegrees ?? 0),
     [computedNavigationState?.headingDegrees]
   );
-  const startIcon = useMemo(() => createBadgeIcon("Start", "route-map__marker--start"), []);
-  const finishIcon = useMemo(() => createBadgeIcon("Finish", "route-map__marker--finish"), []);
-  const riderIcon = useMemo(() => createBadgeIcon("You", "route-map__marker--rider"), []);
+  const startIcon = useMemo(
+    () => createBadgeIcon(t("routeMap.markerStart"), "route-map__marker--start"),
+    [t]
+  );
+  const finishIcon = useMemo(
+    () => createBadgeIcon(t("routeMap.markerFinish"), "route-map__marker--finish"),
+    [t]
+  );
+  const riderIcon = useMemo(
+    () => createBadgeIcon(t("routeMap.markerRider"), "route-map__marker--rider"),
+    [t]
+  );
   const greenwayIcon = useMemo(
-    () => createBadgeIcon("Greenway", "route-map__marker--greenway"),
-    []
+    () => createBadgeIcon(t("routeMap.legendGuide"), "route-map__marker--greenway"),
+    [t]
   );
   const mapClassName = ["route-map", navigationMode ? "route-map--navigation" : "", className]
     .filter(Boolean)
@@ -124,27 +137,27 @@ export default function RouteMap({
               </div>
             </div>
             <div className="route-map__navigation-meta">
-              <span>{remainingLabel} left</span>
+              <span>{t("rideScreen.cueRemaining", { miles: remainingLabel })}</span>
               <span>{activeLegLabel}</span>
               <span>
                 {!currentPosition
-                  ? "Ready"
+                  ? t("rideScreen.headlineGuidanceReady")
                   : computedNavigationState?.snappedToRoute
-                    ? "On saved line"
-                    : "Return to route"}
+                    ? t("rideScreen.cueRoutingFallback")
+                    : t("rideScreen.headlineReturnRoute")}
               </span>
             </div>
           </div>
         ) : (
           <>
             <div className="route-map__summary">
-              <strong>{routeName || "Route preview"}</strong>
+              <strong>{routeName || t("routeMap.legendRoute")}</strong>
               <span>
                 {startLabel
-                  ? `Start at ${startLabel}`
+                  ? t("routeMap.summaryStart", { start: startLabel })
                   : interactive
-                    ? "Click to sketch points or switch to live GPS recording."
-                    : "Open GPS guidance to compare your live position to the saved line."}
+                    ? t("routeBuilder.gpsClickStart")
+                    : t("rideScreen.detailGuidanceReady")}
               </span>
             </div>
 
@@ -156,10 +169,10 @@ export default function RouteMap({
                   "--route-soft": routeTheme.accentSoft
                 }}
               >
-                {routeTheme.badge}
+                {t(routeTheme.badgeKey)}
               </span>
               {guideVisible ? (
-                <span className="route-map__badge route-map__badge--guide">Midtown Greenway guide</span>
+                <span className="route-map__badge route-map__badge--guide">{t("routeMap.legendGuide")}</span>
               ) : null}
             </div>
           </>
@@ -167,11 +180,11 @@ export default function RouteMap({
 
         {showLegend && !navigationMode ? (
           <div className="route-map__legend">
-            {path.length ? <span className="route-map__legend-item route-map__legend-item--route">Saved route</span> : null}
-            {trail.length ? <span className="route-map__legend-item route-map__legend-item--trail">Your live trail</span> : null}
-            {displayPosition ? <span className="route-map__legend-item route-map__legend-item--you">You</span> : null}
+            {path.length ? <span className="route-map__legend-item route-map__legend-item--route">{t("routeMap.legendRoute")}</span> : null}
+            {trail.length ? <span className="route-map__legend-item route-map__legend-item--trail">{t("routeMap.legendTrail")}</span> : null}
+            {displayPosition ? <span className="route-map__legend-item route-map__legend-item--you">{t("routeMap.legendYou")}</span> : null}
             {guideVisible ? (
-              <span className="route-map__legend-item route-map__legend-item--guide">Greenway corridor</span>
+              <span className="route-map__legend-item route-map__legend-item--guide">{t("routeMap.legendGuide")}</span>
             ) : null}
           </div>
         ) : null}

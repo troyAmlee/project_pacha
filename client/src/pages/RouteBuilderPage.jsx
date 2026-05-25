@@ -8,6 +8,7 @@ import TopBar from "../components/TopBar";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
 import { useForm } from "../hooks/useForm";
+import { useTranslation } from "../i18n";
 import {
   GPS_CAPTURE_OPTIONS,
   computePathMiles,
@@ -31,6 +32,7 @@ export default function RouteBuilderPage() {
   const navigate = useNavigate();
   const { member } = useAuth();
   const { data, loading, loadBootstrap } = useClubData();
+  const { t } = useTranslation();
   const { values, handleChange, setValues } = useForm(emptyForm);
   const [mode, setMode] = useState("draw");
   const [path, setPath] = useState([]);
@@ -39,9 +41,7 @@ export default function RouteBuilderPage() {
   const [recording, setRecording] = useState(false);
   const [recordingStartedAt, setRecordingStartedAt] = useState(null);
   const [elapsedMinutes, setElapsedMinutes] = useState(0);
-  const [gpsStatus, setGpsStatus] = useState(
-    "Click the map to draw a route or switch to live GPS recording."
-  );
+  const [gpsStatus, setGpsStatus] = useState(t("routeBuilder.gpsClickStart"));
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -54,9 +54,7 @@ export default function RouteBuilderPage() {
   const pathMiles = useMemo(() => computePathMiles(path), [path]);
   const greenwaySelected = values.terrain === "greenway";
   const modeLead =
-    mode === "draw"
-      ? "Sketch a clean line first, then save it so the GPS ride screen has a route to follow."
-      : "Record a live ride when you want the route to come directly from the street or trail.";
+    mode === "draw" ? t("routeBuilder.guideSketchLead") : t("routeBuilder.guideRecordLead");
 
   useEffect(() => {
     if (!recording || !recordingStartedAt) {
@@ -97,9 +95,7 @@ export default function RouteBuilderPage() {
     setElapsedMinutes(0);
     setRecordingStartedAt(null);
     setFeedback(null);
-    setGpsStatus(
-      `Editing ${routeToEdit.title}. Update the line or notes, then save your changes.`
-    );
+    setGpsStatus(t("routeBuilder.gpsEditing", { title: routeToEdit.title }));
     hydratedRouteIdRef.current = routeToEdit.id;
   }, [routeToEdit, setValues]);
 
@@ -110,7 +106,7 @@ export default function RouteBuilderPage() {
 
     try {
       if (path.length < 2) {
-        throw new Error("Add at least two points to the route before saving it.");
+        throw new Error(t("routeBuilder.errorMinPoints"));
       }
 
       const saveablePath = await getSaveablePath(path);
@@ -138,7 +134,8 @@ export default function RouteBuilderPage() {
           success: buildRouteSaveMessage({
             isEditing,
             ride: payload.ride,
-            matchSource: saveablePath.matchSource
+            matchSource: saveablePath.matchSource,
+            t
           })
         }
       });
@@ -154,7 +151,7 @@ export default function RouteBuilderPage() {
       return { path: rawPath, matchSource: null };
     }
 
-    setGpsStatus("Snapping recorded GPS to nearby roads and trails...");
+    setGpsStatus(t("routeBuilder.gpsSnapping"));
 
     try {
       const payload = await api.matchPath(getRoutingWaypoints(rawPath, 180), "bike");
@@ -163,7 +160,7 @@ export default function RouteBuilderPage() {
         return { path: payload.path, matchSource: payload.source };
       }
     } catch {
-      setGpsStatus("Street snapping was unavailable, so the raw GPS line will be saved.");
+      setGpsStatus(t("routeBuilder.gpsSnapFailed"));
     }
 
     return { path: rawPath, matchSource: null };
@@ -175,7 +172,7 @@ export default function RouteBuilderPage() {
     }
 
     const confirmed = window.confirm(
-      `Delete "${routeToEdit.title}"? This removes it from the route board and any group pins.`
+      t("rideScreen.confirmDelete", { title: routeToEdit.title })
     );
 
     if (!confirmed) {
@@ -191,7 +188,7 @@ export default function RouteBuilderPage() {
       await loadBootstrap();
       navigate("/", {
         replace: true,
-        state: { success: "Route deleted." }
+        state: { success: t("rideScreen.routeDeletedFeedback") }
       });
     } catch (error) {
       setFeedback({ type: "error", message: error.message });
@@ -215,9 +212,7 @@ export default function RouteBuilderPage() {
     setElapsedMinutes(0);
     setRecordingStartedAt(null);
     setFeedback(null);
-    setGpsStatus(
-      `${route.title} is loaded as a starting point. Adjust the line or notes, then save your version.`
-    );
+    setGpsStatus(t("routeBuilder.gpsLoadedSuggestion", { title: route.title }));
   }
 
   function handleMapClick(point) {
@@ -241,15 +236,13 @@ export default function RouteBuilderPage() {
     setRecordingStartedAt(null);
     setFeedback(null);
     setGpsStatus(
-      mode === "record"
-        ? "Recording cleared. Start GPS capture again when you are ready."
-        : "Path cleared. Click the map to lay down a new route."
+      mode === "record" ? t("routeBuilder.gpsCleared") : t("routeBuilder.pathCleared")
     );
   }
 
   function startRecording() {
     if (!navigator.geolocation) {
-      setFeedback({ type: "error", message: "This browser does not support live geolocation." });
+      setFeedback({ type: "error", message: t("rideScreen.geoUnsupported") });
       return;
     }
 
@@ -264,7 +257,7 @@ export default function RouteBuilderPage() {
     setRecording(true);
     setRecordingStartedAt(Date.now());
     setElapsedMinutes(1);
-    setGpsStatus("Waiting for GPS points. Keep this page open while you ride.");
+    setGpsStatus(t("routeBuilder.gpsWaiting"));
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
@@ -282,18 +275,13 @@ export default function RouteBuilderPage() {
           return [...current, point];
         });
 
-        setGpsStatus(
-          "GPS capture is live with tighter points. Stop recording when the route is complete."
-        );
+        setGpsStatus(t("routeBuilder.gpsLive"));
       },
       (error) => {
         stopRecording();
         setFeedback({
           type: "error",
-          message:
-            error.code === 1
-              ? "Location access was denied. Use draw mode or allow geolocation for this site."
-              : "Live GPS capture failed. Try again or use draw mode."
+          message: error.code === 1 ? t("rideScreen.geoDenied") : t("rideScreen.geoFailed")
         });
       },
       GPS_CAPTURE_OPTIONS
@@ -316,8 +304,8 @@ export default function RouteBuilderPage() {
   if (loading || !data) {
     return (
       <div className="loading-state">
-        <p className="loading-kicker">North Star Ridebook</p>
-        <h1>{isEditing ? "Loading route editor..." : "Loading route builder..."}</h1>
+        <p className="loading-kicker">Xxica</p>
+        <h1>{isEditing ? t("routeBuilder.loadingEditor") : t("routeBuilder.loadingBuilder")}</h1>
       </div>
     );
   }
@@ -327,10 +315,10 @@ export default function RouteBuilderPage() {
       <div className="app-shell">
         <TopBar minimal />
         <div className="loading-state loading-state--error">
-          <p className="loading-kicker">North Star Ridebook</p>
-          <h1>That route is not on the board.</h1>
+          <p className="loading-kicker">Xxica</p>
+          <h1>{t("routeBuilder.notOnBoard")}</h1>
           <Link className="button button--primary" to="/">
-            Back to route board
+            {t("routeBuilder.backToBoard")}
           </Link>
         </div>
       </div>
@@ -342,10 +330,10 @@ export default function RouteBuilderPage() {
       <div className="app-shell">
         <TopBar minimal />
         <div className="loading-state loading-state--error">
-          <p className="loading-kicker">North Star Ridebook</p>
-          <h1>You can only edit routes that you created.</h1>
+          <p className="loading-kicker">Xxica</p>
+          <h1>{t("routeBuilder.ownerOnly")}</h1>
           <Link className="button button--primary" to={`/routes/${routeToEdit.id}/ride`}>
-            Back to ride screen
+            {t("routeBuilder.backToRide")}
           </Link>
         </div>
       </div>
@@ -358,16 +346,9 @@ export default function RouteBuilderPage() {
 
       <section className="content-section route-builder">
         <div className="section-heading">
-          <p className="section-kicker">{isEditing ? "Route editor" : "Route builder"}</p>
-          <h1>
-            {isEditing
-              ? "Refine the route before the next rider opens it."
-              : "Make the route easy to read before anyone tries to follow it on a bike."}
-          </h1>
-          <p className="route-builder__lead">
-            Saved routes keep their geometry, and Greenway routes get a dedicated guide overlay so
-            riders can tell at a glance where the corridor sits on the map.
-          </p>
+          <p className="section-kicker">{isEditing ? t("routeBuilder.kickerEditor") : t("routeBuilder.kickerBuilder")}</p>
+          <h1>{isEditing ? t("routeBuilder.titleEditor") : t("routeBuilder.titleBuilder")}</h1>
+          <p className="route-builder__lead">{t("routeBuilder.lead")}</p>
         </div>
 
         <div className="route-builder__layout">
@@ -380,93 +361,83 @@ export default function RouteBuilderPage() {
                   setMode("draw");
                   setCurrentPosition(null);
                   setCurrentAccuracyMeters(null);
-                  setGpsStatus("Sketch mode is active. Click turns, regroup points, or trail bends on the map.");
+                  setGpsStatus(t("routeBuilder.sketchActive"));
                 }}
                 type="button"
               >
-                Sketch route
+                {t("routeBuilder.modeSketch")}
               </button>
               <button
                 className={`button button--outline button--sm${mode === "record" ? " is-active" : ""}`}
                 onClick={() => {
                   setMode("record");
-                  setGpsStatus(
-                    "Live ride mode is active. Start GPS capture when you are rolling and keep this page open."
-                  );
+                  setGpsStatus(t("routeBuilder.recordActive"));
                 }}
                 type="button"
               >
-                Record live ride
+                {t("routeBuilder.modeRecord")}
               </button>
             </div>
 
             <div className="editor editor--paper route-builder__guide">
-              <p className="group-card__eyebrow">How to use it</p>
-              <h3>{mode === "draw" ? "Sketch first, then save." : "Record the line as you ride."}</h3>
+              <p className="group-card__eyebrow">{t("routeBuilder.guideHowKicker")}</p>
+              <h3>{mode === "draw" ? t("routeBuilder.guideSketchTitle") : t("routeBuilder.guideRecordTitle")}</h3>
               <p>{modeLead}</p>
               <ol className="step-list">
-                <li>
-                  {mode === "draw"
-                    ? "Tap the route in order, from start to finish."
-                    : "Grant location access and start GPS capture at the real start point."}
-                </li>
-                <li>
-                  {greenwaySelected
-                    ? "Keep the Midtown Greenway guide in view so your line matches the corridor."
-                    : "Name the route and label the start so riders know where to roll out."}
-                </li>
-                <li>Save the route, then open the ride screen to follow it live or log the ride.</li>
+                <li>{mode === "draw" ? t("routeBuilder.stepSketch1") : t("routeBuilder.stepRecord1")}</li>
+                <li>{greenwaySelected ? t("routeBuilder.stepGreenway") : t("routeBuilder.stepName")}</li>
+                <li>{t("routeBuilder.stepSave")}</li>
               </ol>
             </div>
 
             {isEditing ? null : (
               <SuggestedRoutes
-                actionLabel="Load into builder"
-                description="Use a club route as a starting template instead of drawing from a blank map."
+                actionLabel={t("suggested.action")}
+                description={t("suggested.description")}
                 member
                 onAction={handleUseSuggestedRoute}
                 routes={data.routes}
                 showRideLink={false}
-                title="Start from a proven line"
+                title={t("suggested.title")}
               />
             )}
 
             <form className="editor editor--cool" onSubmit={handleSubmit}>
               <label>
-                Route name
+                {t("routeBuilder.labelTitle")}
                 <input
                   name="title"
                   onChange={handleChange}
-                  placeholder="West River recovery loop"
+                  placeholder={t("routeBuilder.labelTitlePlaceholder")}
                   required
                   value={values.title}
                 />
               </label>
               <label>
-                Start point label
+                {t("routeBuilder.labelStart")}
                 <input
                   name="start"
                   onChange={handleChange}
-                  placeholder="Stone Arch Bridge"
+                  placeholder={t("routeBuilder.labelStartPlaceholder")}
                   required
                   value={values.start}
                 />
               </label>
               <label>
-                Terrain
+                {t("routeBuilder.labelTerrain")}
                 <select name="terrain" onChange={handleChange} value={values.terrain}>
-                  <option value="city streets">City streets</option>
-                  <option value="greenway">Greenway</option>
-                  <option value="gravel">Gravel</option>
-                  <option value="mixed surface">Mixed surface</option>
+                  <option value="city streets">{t("terrain.city streets")}</option>
+                  <option value="greenway">{t("terrain.greenway")}</option>
+                  <option value="gravel">{t("terrain.gravel")}</option>
+                  <option value="mixed surface">{t("terrain.mixed surface")}</option>
                 </select>
               </label>
               <label>
-                Ride notes
+                {t("routeBuilder.labelNotes")}
                 <textarea
                   name="notes"
                   onChange={handleChange}
-                  placeholder="What should another rider know before they follow this route?"
+                  placeholder={t("routeBuilder.labelNotesPlaceholder")}
                   rows="5"
                   value={values.notes}
                 />
@@ -474,15 +445,15 @@ export default function RouteBuilderPage() {
 
               <div className="route-builder__stats">
                 <div>
-                  <span className="stat-label">Path length</span>
+                  <span className="stat-label">{t("routeBuilder.statLength")}</span>
                   <strong>{formatMiles(pathMiles)}</strong>
                 </div>
                 <div>
-                  <span className="stat-label">Recorded time</span>
+                  <span className="stat-label">{t("routeBuilder.statRecorded")}</span>
                   <strong>{formatDurationMinutes(elapsedMinutes)}</strong>
                 </div>
                 <div>
-                  <span className="stat-label">Points</span>
+                  <span className="stat-label">{t("routeBuilder.statPoints")}</span>
                   <strong>{path.length}</strong>
                 </div>
               </div>
@@ -495,7 +466,7 @@ export default function RouteBuilderPage() {
                     disabled={path.length === 0}
                     type="button"
                   >
-                    Undo last point
+                    {t("routeBuilder.undoPoint")}
                   </button>
                   <button
                     className="button button--outline button--sm"
@@ -503,7 +474,7 @@ export default function RouteBuilderPage() {
                     disabled={path.length === 0}
                     type="button"
                   >
-                    Clear sketch
+                    {t("routeBuilder.clearSketch")}
                   </button>
                 </div>
               ) : (
@@ -514,7 +485,7 @@ export default function RouteBuilderPage() {
                       onClick={stopRecording}
                       type="button"
                     >
-                      Stop GPS capture
+                      {t("routeBuilder.stopGps")}
                     </button>
                   ) : (
                     <button
@@ -522,7 +493,7 @@ export default function RouteBuilderPage() {
                       onClick={startRecording}
                       type="button"
                     >
-                      Start GPS capture
+                      {t("routeBuilder.startGps")}
                     </button>
                   )}
                   <button
@@ -531,7 +502,7 @@ export default function RouteBuilderPage() {
                     disabled={path.length === 0 && !recording}
                     type="button"
                   >
-                    Reset ride trace
+                    {t("routeBuilder.resetTrace")}
                   </button>
                 </div>
               )}
@@ -543,11 +514,11 @@ export default function RouteBuilderPage() {
                 <button className="button button--primary" disabled={busy || deleting} type="submit">
                   {busy
                     ? isEditing
-                      ? "Saving changes..."
-                      : "Saving route..."
+                      ? t("routeBuilder.submitEditing")
+                      : t("routeBuilder.submitSaving")
                     : isEditing
-                      ? "Save changes"
-                      : "Save route to club"}
+                      ? t("routeBuilder.submitEdit")
+                      : t("routeBuilder.submitSave")}
                 </button>
 
                 {isEditing ? (
@@ -557,7 +528,7 @@ export default function RouteBuilderPage() {
                     onClick={() => void handleDeleteRoute()}
                     type="button"
                   >
-                    {deleting ? "Deleting route..." : "Delete route"}
+                    {deleting ? t("routeBuilder.deletingRoute") : t("routeBuilder.deleteRoute")}
                   </button>
                 ) : null}
               </div>
@@ -578,9 +549,7 @@ export default function RouteBuilderPage() {
               terrain={values.terrain}
             />
             <p className="route-builder__map-note">
-              {mode === "draw"
-                ? "Sketch mode: every tap adds a point, so use turns, crossings, and clear regroup spots."
-                : "Live mode: GPS points appear as they are captured, so keep the page open until the ride is done."}
+              {mode === "draw" ? t("routeBuilder.mapNoteSketch") : t("routeBuilder.mapNoteRecord")}
             </p>
           </div>
         </div>
@@ -589,24 +558,24 @@ export default function RouteBuilderPage() {
   );
 }
 
-function buildRouteSaveMessage({ isEditing, ride, matchSource }) {
+function buildRouteSaveMessage({ isEditing, ride, matchSource, t }) {
   const providerLabel = formatRoutingProviderLabel(matchSource);
 
   if (isEditing) {
     return providerLabel
-      ? `Route updated with ${providerLabel} street matching.`
-      : "Route updated.";
+      ? t("rideScreen.saveUpdatedProvider", { provider: providerLabel })
+      : t("rideScreen.saveUpdated");
   }
 
   if (ride) {
     return providerLabel
-      ? `Route saved with ${providerLabel} street matching and your recorded ride was logged.`
-      : "Route saved and your recorded ride was logged.";
+      ? t("rideScreen.saveSuccessRideProvider", { provider: providerLabel })
+      : t("rideScreen.saveSuccessRide");
   }
 
   return providerLabel
-    ? `Route saved with ${providerLabel} street matching. Open the ride screen to follow it live.`
-    : "Route saved. Open the ride screen to follow it live.";
+    ? t("rideScreen.saveSuccessProvider", { provider: providerLabel })
+    : t("rideScreen.saveSuccess");
 }
 
 function formatRoutingProviderLabel(source) {

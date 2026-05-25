@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
+import { useTranslation } from "../i18n";
 import { formatDate, formatMiles } from "../utils";
 import FavoriteButton from "./FavoriteButton";
 import FormFeedback from "./FormFeedback";
@@ -11,13 +12,15 @@ import RiderLink from "./RiderLink";
 export default function RouteCard({ route }) {
   const { member } = useAuth();
   const { loadBootstrap } = useClubData();
+  const { t, lang } = useTranslation();
   const [deleting, setDeleting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const isOwner = member?.id === route.createdById;
+  const terrainLabel = t(`terrain.${route.terrain}`) || route.terrain;
 
   async function handleDeleteRoute() {
     const confirmed = window.confirm(
-      `Delete "${route.title}"? This removes it from the route board and any group pins.`
+      t("rideScreen.confirmDelete", { title: route.title })
     );
 
     if (!confirmed) {
@@ -42,23 +45,23 @@ export default function RouteCard({ route }) {
       <div className="story-meta">
         <span>{formatMiles(route.distanceMiles)}</span>
         <span>{route.start}</span>
-        <span>{route.terrain}</span>
+        <span>{terrainLabel}</span>
       </div>
       <h3>{route.title}</h3>
       <p>{route.notes}</p>
       <footer className="story-footer">
         <div className="story-footer__meta">
           <RiderLink riderId={route.createdById} name={route.createdBy} />
-          <span>{formatDate(route.createdAt)}</span>
+          <span>{formatDate(route.createdAt, lang)}</span>
         </div>
         <div className="story-actions">
           <Link className="button button--outline button--sm" to={`/routes/${route.id}/ride`}>
-            Ride screen
+            {t("routeCard.viewRoute")}
           </Link>
           {isOwner ? (
             <>
               <Link className="button button--outline button--sm" to={`/routes/${route.id}/edit`}>
-                Edit route
+                {t("routeCard.editRoute")}
               </Link>
               <button
                 className="button button--outline button--sm"
@@ -66,7 +69,7 @@ export default function RouteCard({ route }) {
                 onClick={() => void handleDeleteRoute()}
                 type="button"
               >
-                {deleting ? "Deleting..." : "Delete"}
+                {deleting ? t("routeBuilder.deletingRoute") : t("common.delete")}
               </button>
             </>
           ) : null}

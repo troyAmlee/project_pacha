@@ -9,12 +9,14 @@ import RouteCard from "../components/RouteCard";
 import TopBar from "../components/TopBar";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
+import { useTranslation } from "../i18n";
 import { formatMiles, toTitleCase } from "../utils";
 
 export default function GroupDetailPage() {
   const { id } = useParams();
   const { member, updateMember } = useAuth();
   const { data, loading, loadBootstrap } = useClubData();
+  const { t } = useTranslation();
   const [selectedRouteId, setSelectedRouteId] = useState("");
   const [feedback, setFeedback] = useState(null);
   const [joining, setJoining] = useState(false);
@@ -56,8 +58,8 @@ export default function GroupDetailPage() {
   if (loading || !data) {
     return (
       <div className="loading-state">
-        <p className="loading-kicker">North Star Ridebook</p>
-        <h1>Loading ride group...</h1>
+        <p className="loading-kicker">Xxica</p>
+        <h1>{t("groupDetail.loading")}</h1>
       </div>
     );
   }
@@ -67,10 +69,10 @@ export default function GroupDetailPage() {
       <div className="app-shell">
         <TopBar minimal />
         <div className="loading-state loading-state--error">
-          <p className="loading-kicker">North Star Ridebook</p>
-          <h1>That group does not exist.</h1>
+          <p className="loading-kicker">Xxica</p>
+          <h1>{t("groupDetail.notFound")}</h1>
           <Link className="button button--primary" to="/groups">
-            Back to groups
+            {t("groupDetail.backToGroups")}
           </Link>
         </div>
       </div>
@@ -90,7 +92,7 @@ export default function GroupDetailPage() {
       const payload = await api.postJson(`/api/groups/${group.id}/join`, {});
       updateMember(payload.member);
       await loadBootstrap();
-      setFeedback({ type: "success", message: "You joined the group." });
+      setFeedback({ type: "success", message: t("groups.joinedSuccess") });
     } catch (error) {
       setFeedback({ type: "error", message: error.message });
     } finally {
@@ -106,7 +108,7 @@ export default function GroupDetailPage() {
     try {
       await api.postJson(`/api/groups/${group.id}/routes`, { routeId: selectedRouteId });
       await loadBootstrap();
-      setFeedback({ type: "success", message: "Route pinned to the group." });
+      setFeedback({ type: "success", message: t("groupDetail.pinSuccess") });
     } catch (error) {
       setFeedback({ type: "error", message: error.message });
     } finally {
@@ -120,26 +122,26 @@ export default function GroupDetailPage() {
 
       <section className="content-section group-detail">
         <div className="section-heading">
-          <p className="section-kicker">Group detail</p>
+          <p className="section-kicker">{t("groupDetail.kicker")}</p>
           <h1>{group.name}</h1>
           <p className="groups-page__lead">{group.description}</p>
         </div>
 
         <div className="ride-screen__stats">
           <div>
-            <span className="stat-label">Members</span>
+            <span className="stat-label">{t("groupDetail.statMembers")}</span>
             <strong>{group.memberIds.length}</strong>
           </div>
           <div>
-            <span className="stat-label">Pinned routes</span>
+            <span className="stat-label">{t("groupDetail.statPinned")}</span>
             <strong>{group.pinnedRouteIds.length}</strong>
           </div>
           <div>
-            <span className="stat-label">Miles logged</span>
+            <span className="stat-label">{t("groupDetail.statMiles")}</span>
             <strong>{formatMiles(groupMiles)}</strong>
           </div>
           <div>
-            <span className="stat-label">Founder</span>
+            <span className="stat-label">{t("groupDetail.statFounder")}</span>
             <strong>{group.createdBy}</strong>
           </div>
         </div>
@@ -147,7 +149,7 @@ export default function GroupDetailPage() {
         <div className="group-detail__actions">
           {member ? (
             isMember ? (
-              <p className="empty-note">You are already part of this group.</p>
+              <p className="empty-note">{t("groupDetail.alreadyMember")}</p>
             ) : (
               <button
                 className="button button--primary"
@@ -155,17 +157,17 @@ export default function GroupDetailPage() {
                 onClick={() => void handleJoinGroup()}
                 type="button"
               >
-                {joining ? "Joining..." : "Join group"}
+                {joining ? t("groupDetail.joining") : t("groupDetail.joinGroup")}
               </button>
             )
           ) : (
-            <LockedNote action="join this ride group" />
+            <LockedNote action="locked.actionJoinGroup" />
           )}
 
           {member && isMember && availableRoutes.length ? (
             <form className="editor editor--warm group-detail__pin-form" onSubmit={handlePinRoute}>
               <label>
-                Pin a route for the group
+                {t("groupDetail.pinLabel")}
                 <select onChange={(event) => setSelectedRouteId(event.target.value)} value={selectedRouteId}>
                   {availableRoutes.map((route) => (
                     <option key={route.id} value={route.id}>
@@ -175,7 +177,7 @@ export default function GroupDetailPage() {
                 </select>
               </label>
               <button className="button button--primary button--sm" disabled={pinning} type="submit">
-                {pinning ? "Pinning..." : "Pin route"}
+                {pinning ? t("groupDetail.pinBusy") : t("groupDetail.pinSubmit")}
               </button>
             </form>
           ) : null}
@@ -187,8 +189,8 @@ export default function GroupDetailPage() {
       <main className="workspace">
         <section className="content-section">
           <div className="section-heading">
-            <p className="section-kicker">Member roster</p>
-            <h2>The riders currently in this group.</h2>
+            <p className="section-kicker">{t("groupDetail.rosterKicker")}</p>
+            <h2>{t("groupDetail.rosterTitle")}</h2>
           </div>
           <div className="member-rail">
             {members.map((rider) => (
@@ -199,7 +201,7 @@ export default function GroupDetailPage() {
                     <RiderLink name={rider.name} riderId={rider.id} />
                   </h3>
                   <p>
-                    {rider.neighborhood} - {toTitleCase(rider.pace)} pace
+                    {rider.neighborhood} · {t(`pace.${rider.pace}`) || toTitleCase(rider.pace)}
                   </p>
                   <span>{rider.bio}</span>
                 </div>
@@ -210,8 +212,8 @@ export default function GroupDetailPage() {
 
         <section className="content-section">
           <div className="section-heading">
-            <p className="section-kicker">Pinned routes</p>
-            <h2>Routes this crew keeps ready for ride day.</h2>
+            <p className="section-kicker">{t("groupDetail.pinnedKicker")}</p>
+            <h2>{t("groupDetail.pinnedTitle")}</h2>
           </div>
           {pinnedRoutes.length ? (
             <div className="stack-list">
@@ -220,7 +222,7 @@ export default function GroupDetailPage() {
               ))}
             </div>
           ) : (
-            <p className="empty-note">No routes have been pinned yet.</p>
+            <p className="empty-note">{t("groupDetail.pinnedEmpty")}</p>
           )}
         </section>
       </main>

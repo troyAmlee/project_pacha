@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
+import { useTranslation } from "../i18n";
 import LockedNote from "./LockedNote";
 import RouteCard from "./RouteCard";
 import SuggestedRoutes from "./SuggestedRoutes";
@@ -8,45 +9,40 @@ import SuggestedRoutes from "./SuggestedRoutes";
 export default function RouteBoard() {
   const { member } = useAuth();
   const { data } = useClubData();
+  const { t } = useTranslation();
 
   return (
     <section className="content-section content-section--split" id="routes">
       <div className="section-heading">
-        <p className="section-kicker">Route board</p>
-        <h2>Share the loops people actually ride, not just the ones on a brochure map.</h2>
-        <p>
-          Routes now carry geometry, so riders can save a line, open it later in the ride screen,
-          and follow it with live GPS.
-        </p>
+        <p className="section-kicker">{t("home.routeBoardKicker")}</p>
+        <h2>{t("home.routeBoardTitle")}</h2>
+        <p>{t("home.routeBoardLead")}</p>
       </div>
 
       <div className="section-body section-body--split">
         <div className="route-workbench">
           {member ? (
             <div className="editor editor--cool">
-              <h3>Build routes with geometry.</h3>
-              <p>
-                Draw a route point by point or capture one live with GPS. Every saved route can
-                open in the ride screen later with the line and Greenway guide intact.
-              </p>
+              <h3>{t("home.routeBuildHeading")}</h3>
+              <p>{t("home.routeBuildBody")}</p>
               <div className="locked-note__actions">
                 <Link className="button button--primary" to="/routes/new">
-                  Open route builder
+                  {t("home.routeBuildCta")}
                 </Link>
                 <Link className="button button--outline" to="/groups">
-                  See groups
+                  {t("home.routeBuildSeeGroups")}
                 </Link>
               </div>
             </div>
           ) : (
-            <LockedNote action="share a route with map geometry" />
+            <LockedNote action="locked.actionShareRoute" />
           )}
 
           <SuggestedRoutes
-            description="These are the best routes to load first if you are new to the board or just want a dependable ride."
+            description={t("home.suggestedClubDescription")}
             member={member}
             routes={data.routes}
-            title="Club picks"
+            title={t("home.suggestedClubTitle")}
           />
         </div>
 

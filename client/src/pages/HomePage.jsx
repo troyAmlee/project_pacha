@@ -7,18 +7,20 @@ import RouteBoard from "../components/RouteBoard";
 import TopBar from "../components/TopBar";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
+import { useTranslation } from "../i18n";
 import { formatMiles } from "../utils";
 
 export default function HomePage() {
   const location = useLocation();
   const { member } = useAuth();
   const { data, loading, error, loadBootstrap } = useClubData();
+  const { t } = useTranslation();
 
   if (loading) {
     return (
       <div className="loading-state">
-        <p className="loading-kicker">North Star Ridebook</p>
-        <h1>Loading the Minneapolis ride board...</h1>
+        <p className="loading-kicker">Xxica</p>
+        <h1>{t("home.loadingBoard")}</h1>
       </div>
     );
   }
@@ -26,11 +28,11 @@ export default function HomePage() {
   if (!data) {
     return (
       <div className="loading-state loading-state--error">
-        <p className="loading-kicker">North Star Ridebook</p>
-        <h1>Club data is unavailable.</h1>
+        <p className="loading-kicker">Xxica</p>
+        <h1>{t("home.dataUnavailable")}</h1>
         {error ? <p className="feedback feedback--error">{error}</p> : null}
         <button className="button button--primary" onClick={() => void loadBootstrap()}>
-          Retry
+          {t("common.retry")}
         </button>
       </div>
     );
@@ -48,25 +50,21 @@ export default function HomePage() {
 
       <section className="hero" id="top">
         <div className="hero-copy">
-          <p className="eyebrow">Bike club workspace</p>
-          <h1>Routes, ride photos, groups, and a shared journal for Minneapolis riders.</h1>
-          <p className="hero-summary">
-            The board now runs as an actual club tool: riders join the community, save route lines
-            with geometry, organize into groups, and open a live ride screen when it is time to
-            follow the route.
-          </p>
+          <p className="eyebrow">{t("home.heroEyebrow")}</p>
+          <h1>{t("home.heroTitle")}</h1>
+          <p className="hero-summary">{t("home.heroSummary")}</p>
           <div className="hero-actions">
             {member ? (
               <Link className="button button--primary" to="/routes/new">
-                Build a route
+                {t("home.heroCtaBuildRoute")}
               </Link>
             ) : (
               <a className="button button--primary" href="#join">
-                Join the club
+                {t("home.heroCtaJoin")}
               </a>
             )}
             <a className="button button--ghost" href="#routes">
-              Browse route board
+              {t("home.heroCtaBrowse")}
             </a>
           </div>
         </div>
@@ -75,27 +73,27 @@ export default function HomePage() {
           <div className="route-orbit route-orbit--one" />
           <div className="route-orbit route-orbit--two" />
           <div className="route-orbit route-orbit--three" />
-          <div className="route-pin route-pin--one">River loop</div>
-          <div className="route-pin route-pin--two">Greenway</div>
-          <div className="route-pin route-pin--three">Northside</div>
+          <div className="route-pin route-pin--one">{t("home.heroPinRiver")}</div>
+          <div className="route-pin route-pin--two">{t("home.heroPinGreenway")}</div>
+          <div className="route-pin route-pin--three">{t("home.heroPinNorthside")}</div>
         </div>
       </section>
 
       <section className="stats-band" aria-label="Club stats">
         <div>
-          <span className="stat-label">Members</span>
+          <span className="stat-label">{t("home.statMembers")}</span>
           <strong>{data.stats.memberCount}</strong>
         </div>
         <div>
-          <span className="stat-label">Shared miles</span>
+          <span className="stat-label">{t("home.statSharedMiles")}</span>
           <strong>{formatMiles(data.stats.milesShared)}</strong>
         </div>
         <div>
-          <span className="stat-label">Ride groups</span>
+          <span className="stat-label">{t("home.statGroups")}</span>
           <strong>{data.stats.groupCount}</strong>
         </div>
         <div>
-          <span className="stat-label">Logged rides</span>
+          <span className="stat-label">{t("home.statRides")}</span>
           <strong>{data.stats.rideCount}</strong>
         </div>
       </section>

@@ -3,6 +3,7 @@ import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
 import { useForm } from "../hooks/useForm";
+import { useTranslation } from "../i18n";
 import FormFeedback from "./FormFeedback";
 import LockedNote from "./LockedNote";
 import RiderLink from "./RiderLink";
@@ -15,6 +16,7 @@ const emptyPhotoForm = {
 export default function PhotoWall() {
   const { member } = useAuth();
   const { data, addItem } = useClubData();
+  const { t } = useTranslation();
   const { values, handleChange, reset } = useForm(emptyPhotoForm);
   const [file, setFile] = useState(null);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -40,7 +42,10 @@ export default function PhotoWall() {
       reset();
       setFile(null);
       setFileInputKey((current) => current + 1);
-      setFeedback({ type: "success", message: `Photo posted by ${payload.photo.createdBy}.` });
+      setFeedback({
+        type: "success",
+        message: t("home.photoSuccess", { name: payload.photo.createdBy })
+      });
     } catch (error) {
       setFeedback({ type: "error", message: error.message });
     } finally {
@@ -51,40 +56,37 @@ export default function PhotoWall() {
   return (
     <section className="content-section content-section--gallery" id="photos">
       <div className="section-heading">
-        <p className="section-kicker">Photo wall</p>
-        <h2>Let rides leave behind proof: river light, trail dust, coffee stops, and weather.</h2>
-        <p>
-          The backend stores uploads locally, so this MVP already supports real image sharing
-          instead of mock photo cards.
-        </p>
+        <p className="section-kicker">{t("home.photosKicker")}</p>
+        <h2>{t("home.photosTitle")}</h2>
+        <p>{t("home.photosLead")}</p>
       </div>
 
       <div className="section-body section-body--gallery">
         {member ? (
           <form className="editor editor--dark" onSubmit={handleSubmit}>
             <label>
-              Route tag
+              {t("home.photoFormRouteTag")}
               <input
                 name="routeTag"
                 value={values.routeTag}
                 onChange={handleChange}
-                placeholder="Greenway shakeout"
+                placeholder={t("home.photoFormRouteTagPlaceholder")}
                 required
               />
             </label>
             <label>
-              Caption
+              {t("home.photoFormCaption")}
               <textarea
                 name="caption"
                 rows="4"
                 value={values.caption}
                 onChange={handleChange}
-                placeholder="Tailwind through the corridor and a stop for cardamom buns after the ride."
+                placeholder={t("home.photoFormCaptionPlaceholder")}
                 required
               />
             </label>
             <label>
-              Upload image
+              {t("home.photoFormUpload")}
               <input
                 key={fileInputKey}
                 name="photo"
@@ -95,12 +97,12 @@ export default function PhotoWall() {
               />
             </label>
             <button className="button button--primary" type="submit" disabled={busy}>
-              {busy ? "Uploading..." : "Post photo"}
+              {busy ? t("home.photoFormBusy") : t("home.photoFormSubmit")}
             </button>
             <FormFeedback feedback={feedback} />
           </form>
         ) : (
-          <LockedNote action="post a ride photo" />
+          <LockedNote action="locked.actionPostPhoto" />
         )}
 
         <div className="photo-grid">

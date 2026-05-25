@@ -8,6 +8,7 @@ import TopBar from "../components/TopBar";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
 import { useForm } from "../hooks/useForm";
+import { useTranslation } from "../i18n";
 import { formatMiles } from "../utils";
 
 const emptyForm = {
@@ -19,6 +20,7 @@ export default function GroupsPage() {
   const navigate = useNavigate();
   const { member, updateMember } = useAuth();
   const { data, loading, loadBootstrap } = useClubData();
+  const { t } = useTranslation();
   const { values, handleChange, reset } = useForm(emptyForm);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -27,8 +29,8 @@ export default function GroupsPage() {
   if (loading || !data) {
     return (
       <div className="loading-state">
-        <p className="loading-kicker">North Star Ridebook</p>
-        <h1>Loading ride groups...</h1>
+        <p className="loading-kicker">Xxica</p>
+        <h1>{t("groups.loading")}</h1>
       </div>
     );
   }
@@ -59,7 +61,7 @@ export default function GroupsPage() {
       const payload = await api.postJson(`/api/groups/${groupId}/join`, {});
       updateMember(payload.member);
       await loadBootstrap();
-      setFeedback({ type: "success", message: "You joined the group." });
+      setFeedback({ type: "success", message: t("groups.joinedSuccess") });
     } catch (error) {
       setFeedback({ type: "error", message: error.message });
     } finally {
@@ -73,44 +75,41 @@ export default function GroupsPage() {
 
       <section className="content-section">
         <div className="section-heading">
-          <p className="section-kicker">Bike club groups</p>
-          <h1>Organize recurring crews, pin trusted routes, and launch ride screens from one place.</h1>
-          <p className="groups-page__lead">
-            Groups give the club a structure beyond the shared feed: each one has its own roster,
-            saved routes, and a simple join flow.
-          </p>
+          <p className="section-kicker">{t("groups.kicker")}</p>
+          <h1>{t("groups.pageTitle")}</h1>
+          <p className="groups-page__lead">{t("groups.pageLead")}</p>
         </div>
 
         <div className="section-body section-body--split">
           {member ? (
             <form className="editor editor--warm" onSubmit={handleCreateGroup}>
               <label>
-                Group name
+                {t("groups.createGroupName")}
                 <input
                   name="name"
                   onChange={handleChange}
-                  placeholder="River Dawns"
+                  placeholder={t("groups.createGroupNamePlaceholder")}
                   required
                   value={values.name}
                 />
               </label>
               <label>
-                Description
+                {t("groups.createDescription")}
                 <textarea
                   name="description"
                   onChange={handleChange}
-                  placeholder="Who the group is for, what pace it likes, and what kind of routes it pins."
+                  placeholder={t("groups.createDescriptionPlaceholder")}
                   rows="5"
                   value={values.description}
                 />
               </label>
               <button className="button button--primary" disabled={busy} type="submit">
-                {busy ? "Creating group..." : "Create group"}
+                {busy ? t("groups.createBusy") : t("groups.createSubmit")}
               </button>
               <FormFeedback feedback={feedback} />
             </form>
           ) : (
-            <LockedNote action="create or join a ride group" />
+            <LockedNote action="locked.actionCreateGroup" />
           )}
 
           <div className="group-grid">
@@ -122,19 +121,20 @@ export default function GroupsPage() {
 
               return (
                 <article className="group-card" key={group.id}>
-                  <p className="group-card__eyebrow">{group.memberIds.length} riders</p>
+                  <p className="group-card__eyebrow">{t("groups.countRiders", { count: group.memberIds.length })}</p>
                   <h3>{group.name}</h3>
                   <p className="group-card__summary">{group.description}</p>
                   <div className="group-card__meta">
-                    <span>{group.pinnedRouteIds.length} pinned routes</span>
-                    <span>{formatMiles(groupMiles)} logged</span>
+                    <span>{t("groups.pinnedRoutes", { count: group.pinnedRouteIds.length })}</span>
+                    <span>{t("groups.milesLogged", { miles: formatMiles(groupMiles) })}</span>
                   </div>
                   <p className="group-card__creator">
-                    Started by <RiderLink name={group.createdBy} riderId={group.createdById} />
+                    {t("groups.startedBy")}{" "}
+                    <RiderLink name={group.createdBy} riderId={group.createdById} />
                   </p>
                   <div className="group-card__actions">
                     <Link className="button button--outline button--sm" to={`/groups/${group.id}`}>
-                      View group
+                      {t("groups.viewGroup")}
                     </Link>
                     {member && !isMember ? (
                       <button
@@ -143,7 +143,7 @@ export default function GroupsPage() {
                         onClick={() => void handleJoinGroup(group.id)}
                         type="button"
                       >
-                        {joiningGroupId === group.id ? "Joining..." : "Join"}
+                        {joiningGroupId === group.id ? t("groups.joining") : t("groups.join")}
                       </button>
                     ) : null}
                   </div>

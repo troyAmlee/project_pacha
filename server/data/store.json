@@ -1,8 +1,8 @@
 {
   "club": {
-    "name": "North Star Ridebook",
+    "name": "Xxica",
     "city": "Minneapolis, Minnesota",
-    "description": "A shared ride board for people who want one place to join the crew, trade routes, post ride photos, and keep the club journal moving."
+    "description": "A shared ride board for the crew that keeps showing up — trade rutas, drop ride photos, and keep the collective journal moving."
   },
   "members": [
     {
@@ -73,6 +73,32 @@
     }
   ],
   "routes": [
+    {
+      "id": "route-mpkqyp0z-a515i9",
+      "title": "Random",
+      "createdBy": "Troy Amlee",
+      "createdById": "member-mp7vksx2-8bs752",
+      "distanceMiles": 4.4,
+      "start": "Stone Arch Bridge",
+      "startCoords": [
+        44.970094,
+        -93.282931
+      ],
+      "terrain": "city streets",
+      "notes": "Random",
+      "path": [
+        [
+          44.970094,
+          -93.282931
+        ],
+        [
+          44.951785,
+          -93.196283
+        ]
+      ],
+      "source": "draw",
+      "createdAt": "2026-05-25T05:09:40.787Z"
+    },
     {
       "id": "route-mpdedehh-zoxxm6",
       "title": "Northside gravel connector",
@@ -519,6 +545,15 @@
     }
   ],
   "photos": [
+    {
+      "id": "photo-mpkqmsjm-m52271",
+      "createdBy": "Troy Amlee",
+      "createdById": "member-mp7vksx2-8bs752",
+      "routeTag": "Greenway, Minneapols",
+      "caption": "Big chilling",
+      "imageUrl": "/uploads/1779685225469-Screenshot-2026-05-08-224744.png",
+      "createdAt": "2026-05-25T05:00:25.474Z"
+    },
     {
       "id": "photo-mp7ty9wd-c2sk93",
       "createdBy": "Troy Amlee",
