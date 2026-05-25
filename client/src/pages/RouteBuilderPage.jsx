@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
 import { useForm } from "../hooks/useForm";
 import { useTranslation } from "../i18n";
+import { resolveSaveablePath } from "../routeSaving";
 import {
   GPS_CAPTURE_OPTIONS,
   computePathMiles,
@@ -36,6 +37,7 @@ export default function RouteBuilderPage() {
   const { values, handleChange, setValues } = useForm(emptyForm);
   const [mode, setMode] = useState("draw");
   const [path, setPath] = useState([]);
+  const [routedSketchPath, setRoutedSketchPath] = useState([]);
   const [currentPosition, setCurrentPosition] = useState(null);
   const [currentAccuracyMeters, setCurrentAccuracyMeters] = useState(null);
   const [recording, setRecording] = useState(false);
@@ -51,7 +53,9 @@ export default function RouteBuilderPage() {
   const isEditing = Boolean(id);
   const routeToEdit = data?.routes.find((route) => route.id === id);
   const isOwner = routeToEdit ? routeToEdit.createdById === member?.id : false;
-  const pathMiles = useMemo(() => computePathMiles(path), [path]);
+  const displayPath =
+    mode === "draw" && routedSketchPath.length >= 2 ? routedSketchPath : path;
+  const pathMiles = useMemo(() => computePathMiles(displayPath), [displayPath]);
   const greenwaySelected = values.terrain === "greenway";
   const modeLead =
     mode === "draw" ? t("routeBuilder.guideSketchLead") : t("routeBuilder.guideRecordLead");
@@ -71,6 +75,48 @@ export default function RouteBuilderPage() {
   useEffect(() => {
     return () => stopRecording();
   }, []);
+
+  useEffect(() => {
+    if (mode !== "draw" || path.length < 2) {
+      setRoutedSketchPath([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(async () => {
+      setGpsStatus(t("routeBuilder.routeSnapping"));
+
+      try {
+        const payload = await api.routePath(getRoutingWaypoints(path), "bike");
+
+        if (cancelled) {
+          return;
+        }
+
+        if (payload?.path?.length >= 2) {
+          setRoutedSketchPath(payload.path);
+          setGpsStatus(
+            t("routeBuilder.routePreviewReady", {
+              provider: formatRoutingProviderLabel(payload.source) ?? t("routeBuilder.routePreviewProvider")
+            })
+          );
+          return;
+        }
+
+        setRoutedSketchPath([]);
+      } catch {
+        if (!cancelled) {
+          setRoutedSketchPath([]);
+          setGpsStatus(t("routeBuilder.routeSnapFailed"));
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [mode, path, t]);
 
   useEffect(() => {
     hydratedRouteIdRef.current = "";
@@ -109,7 +155,13 @@ export default function RouteBuilderPage() {
         throw new Error(t("routeBuilder.errorMinPoints"));
       }
 
-      const saveablePath = await getSaveablePath(path);
+      const saveablePath = await resolveSaveablePath({
+        api,
+        mode,
+        rawPath: path,
+        setStatus: setGpsStatus,
+        t
+      });
       const routePath = saveablePath.path;
       const payload = await (isEditing
         ? api.putJson(`/api/routes/${routeToEdit.id}`, {
@@ -144,26 +196,6 @@ export default function RouteBuilderPage() {
     } finally {
       setBusy(false);
     }
-  }
-
-  async function getSaveablePath(rawPath) {
-    if (mode !== "record") {
-      return { path: rawPath, matchSource: null };
-    }
-
-    setGpsStatus(t("routeBuilder.gpsSnapping"));
-
-    try {
-      const payload = await api.matchPath(getRoutingWaypoints(rawPath, 180), "bike");
-
-      if (payload?.path?.length >= 2) {
-        return { path: payload.path, matchSource: payload.source };
-      }
-    } catch {
-      setGpsStatus(t("routeBuilder.gpsSnapFailed"));
-    }
-
-    return { path: rawPath, matchSource: null };
   }
 
   async function handleDeleteRoute() {
@@ -542,7 +574,7 @@ export default function RouteBuilderPage() {
               height={520}
               interactive={mode === "draw"}
               onMapClick={handleMapClick}
-              path={path}
+              path={displayPath}
               routeName={values.title}
               showGreenwayGuide={greenwaySelected}
               startLabel={values.start}

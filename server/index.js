@@ -424,7 +424,6 @@ app.post(
 
 app.post(
   "/api/navigation/route",
-  requireAuth,
   asyncHandler(async (request, response) => {
     const routingPoints = requirePath(request.body.points, "Routing points", {
       minPoints: 2,
