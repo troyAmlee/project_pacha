@@ -74,6 +74,80 @@
   ],
   "routes": [
     {
+      "id": "route-mplhhkvz-mu7hgq",
+      "title": "Greenway shakeout to Bde Maka Ska",
+      "createdBy": "Troy Amlee",
+      "createdById": "member-mp7vksx2-8bs752",
+      "distanceMiles": 6.3,
+      "start": "Midtown Greenway access at 10th Ave",
+      "startCoords": [
+        44.9506,
+        -93.2602
+      ],
+      "terrain": "greenway",
+      "notes": "Great for newer riders. Mostly forgiving pace with an easy lake lap once the group settles in.",
+      "path": [
+        [
+          44.9506,
+          -93.2602
+        ],
+        [
+          44.9489,
+          -93.2696
+        ],
+        [
+          44.9484,
+          -93.2793
+        ],
+        [
+          44.9488,
+          -93.2897
+        ],
+        [
+          44.9464,
+          -93.3005
+        ],
+        [
+          44.944,
+          -93.3092
+        ],
+        [
+          44.9426,
+          -93.3166
+        ],
+        [
+          44.9448,
+          -93.3219
+        ],
+        [
+          44.9476,
+          -93.3171
+        ],
+        [
+          44.9496,
+          -93.3083
+        ],
+        [
+          44.95,
+          -93.298
+        ],
+        [
+          44.9494,
+          -93.2875
+        ],
+        [
+          44.9497,
+          -93.2757
+        ],
+        [
+          44.9506,
+          -93.2602
+        ]
+      ],
+      "source": "draw",
+      "createdAt": "2026-05-25T17:32:11.904Z"
+    },
+    {
       "id": "route-mpkqyp0z-a515i9",
       "title": "Random",
       "createdBy": "Troy Amlee",

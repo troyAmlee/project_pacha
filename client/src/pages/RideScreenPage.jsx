@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import FormFeedback from "../components/FormFeedback";
-import RouteMap from "../components/RouteMap";
+import NavigationMap from "../components/NavigationMap";
 import SuggestedRoutes from "../components/SuggestedRoutes";
 import TopBar from "../components/TopBar";
 import { useAuth } from "../context/AuthContext";
@@ -466,15 +466,13 @@ export default function RideScreenPage() {
 
         <div className="ride-screen__layout">
           <div className="ride-screen__map-panel">
-            <RouteMap
+            <NavigationMap
               currentAccuracyMeters={currentAccuracyMeters ?? undefined}
               currentPosition={currentPosition}
               height={640}
-              navigationMode
               navigationState={navigationState}
               path={navigationPath}
               routeName={route.title}
-              showLegend={false}
               showGreenwayGuide={route.terrain === "greenway"}
               startLabel={route.start}
               terrain={route.terrain}
