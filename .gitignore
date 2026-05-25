@@ -4,3 +4,7 @@ server/uploads/*
 !server/uploads/.gitkeep
 npm-debug.log*
 .worktrees/
+.env
+.env.local
+.env.*.local
+.gstack/

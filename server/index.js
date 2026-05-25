@@ -49,6 +49,7 @@ const ROUTING_PROFILE_OPTIONS = ["bike", "car", "foot", "driving"];
 const ROUTING_PROVIDER_OPTIONS = ["valhalla", "osrm"];
 
 const app = express();
+app.set("trust proxy", 1);
 const upload = multer({
   storage: multer.diskStorage({
     destination: (_request, _file, callback) => callback(null, uploadsDirectory),

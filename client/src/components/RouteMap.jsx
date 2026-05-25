@@ -9,6 +9,7 @@ import {
   useMap,
   useMapEvents
 } from "react-leaflet";
+import { getMapTileConfig } from "../mapTiles";
 import {
   formatNavigationDistance,
   getPathCenter,
@@ -19,13 +20,6 @@ import {
 } from "../utils";
 
 const EMPTY_PATH = [];
-const STANDARD_TILE_LAYER_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const STANDARD_TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
-const NAVIGATION_TILE_LAYER_URL =
-  "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-const NAVIGATION_TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 export default function RouteMap({
   path = [],
@@ -96,6 +90,7 @@ export default function RouteMap({
   const mapClassName = ["route-map", navigationMode ? "route-map--navigation" : "", className]
     .filter(Boolean)
     .join(" ");
+  const tileConfig = useMemo(() => getMapTileConfig({ navigationMode }), [navigationMode]);
   const completedPath = computedNavigationState?.completedPath ?? EMPTY_PATH;
   const remainingPath = computedNavigationState?.remainingPath ?? path;
   const plannedRoutePath = computedNavigationState?.plannedRoutePath ?? path;
@@ -190,8 +185,11 @@ export default function RouteMap({
         zoomControl={!navigationMode}
       >
         <TileLayer
-          attribution={navigationMode ? NAVIGATION_TILE_ATTRIBUTION : STANDARD_TILE_ATTRIBUTION}
-          url={navigationMode ? NAVIGATION_TILE_LAYER_URL : STANDARD_TILE_LAYER_URL}
+          attribution={tileConfig.attribution}
+          key={tileConfig.source}
+          tileSize={tileConfig.tileSize ?? 256}
+          url={tileConfig.url}
+          zoomOffset={tileConfig.zoomOffset ?? 0}
         />
         <FitRouteBounds
           currentPosition={displayPosition}
