@@ -70,6 +70,7 @@ export const GPS_PATH_CORNER_MIN_DISTANCE_MILES = 0.0015;
 export const GPS_PATH_CORNER_DEGREES = 18;
 export const NAVIGATION_SNAP_TO_ROUTE_MILES = 0.08;
 export const NAVIGATION_START_REACHED_MILES = 0.04;
+const METERS_PER_MILE = 1609.344;
 const NAVIGATION_STEP_NOW_MILES = 0.03;
 const NAVIGATION_STEP_LOOKAHEAD_MILES = 0.25;
 export const MIDTOWN_GREENWAY_PATH = [
@@ -288,9 +289,16 @@ export function getRouteNavigationState(currentPosition, path, options = {}) {
 
   const toStartPath = getToStartPath(currentPosition, startPoint, plannedRoutePath, options.toStartPath);
   const toStartMiles = computePathMilesExact(toStartPath);
-  const startReached = toStartMiles <= NAVIGATION_START_REACHED_MILES;
+  // Inflate the geofence by the GPS accuracy radius so the leg transition
+  // fires when the rider's accuracy bubble overlaps the start, instead of
+  // requiring the (often jittery) reported point to land inside a 65m circle.
+  const accuracyMiles =
+    Number.isFinite(options.accuracyMeters) && options.accuracyMeters > 0
+      ? options.accuracyMeters / METERS_PER_MILE
+      : 0;
+  const startReached = toStartMiles <= NAVIGATION_START_REACHED_MILES + accuracyMiles;
   const closest = getClosestPointOnPath(currentPosition, plannedRoutePath);
-  const snappedToRoute = closest.distanceMiles <= NAVIGATION_SNAP_TO_ROUTE_MILES;
+  const snappedToRoute = closest.distanceMiles <= NAVIGATION_SNAP_TO_ROUTE_MILES + accuracyMiles;
 
   if (!startReached && !snappedToRoute) {
     const toStartClosest = getClosestPointOnPath(currentPosition, toStartPath);
