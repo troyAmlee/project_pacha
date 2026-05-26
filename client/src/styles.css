@@ -84,6 +84,85 @@ img {
   animation: rise-in 700ms ease both;
 }
 
+.topbar-search--inline {
+  flex: 1 1 280px;
+  max-width: 340px;
+}
+
+@media (max-width: 960px) {
+  .topbar-search--inline {
+    display: none;
+  }
+  .topbar-icon-button--search {
+    display: inline-flex;
+  }
+}
+
+.topbar-icon-button {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(26, 26, 26, 0.12);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.topbar-icon-button:hover,
+.topbar-icon-button:focus-visible {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.topbar-search-sheet,
+.topbar-menu-sheet {
+  position: sticky;
+  top: 84px;
+  z-index: 9;
+  margin: -12px auto 14px;
+  width: min(100% - 36px, 1240px);
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(26, 26, 26, 0.08);
+  box-shadow: 0 18px 38px rgba(26, 26, 26, 0.12);
+  display: grid;
+  gap: 12px;
+}
+
+.topbar-search-sheet__close {
+  justify-self: end;
+}
+
+.topbar-menu-sheet__nav {
+  display: grid;
+  gap: 4px;
+}
+
+.topbar-menu-sheet__nav a {
+  padding: 10px 4px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.topbar-menu-sheet__nav a:hover,
+.topbar-menu-sheet__nav a:focus-visible {
+  background: rgba(26, 115, 232, 0.08);
+}
+
+.topbar-menu-sheet__auth {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(26, 26, 26, 0.08);
+}
+
 .topbar-kicker,
 .eyebrow,
 .section-kicker,
@@ -703,8 +782,30 @@ img {
 
   .topbar {
     top: 8px;
-    flex-direction: column;
-    align-items: flex-start;
+    padding: 10px 14px;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .topbar-kicker {
+    display: none;
+  }
+
+  .topbar-nav,
+  .topbar-auth {
+    display: none;
+  }
+
+  .topbar-icon-button--menu {
+    display: inline-flex;
+  }
+
+  .topbar-search-sheet,
+  .topbar-menu-sheet {
+    top: 68px;
+    width: calc(100% - 18px);
+    padding: 12px;
   }
 
   .hero {
