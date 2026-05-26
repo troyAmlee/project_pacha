@@ -360,7 +360,17 @@ const dictionaries = {
       gpsWaiting: "Waiting for GPS points. Keep this page open while you ride.",
       gpsLive: "GPS capture is live with tighter points. Stop recording when the route is complete.",
       sketchActive: "Sketch mode is active. Click turns, regroup points, or trail bends on the map.",
-      recordActive: "Live ride mode is active. Start GPS capture when you are rolling and keep this page open."
+      recordActive: "Live ride mode is active. Start GPS capture when you are rolling and keep this page open.",
+      addressSearchPlaceholder: "Search an address or place",
+      addressSearchModeLabel: "Address insert mode",
+      addressSearchAppend: "Append",
+      addressSearchReplace: "Replace selected",
+      addressSearchReplaceHint: "Tap a point on the map first, then search to replace it.",
+      addressSearchLoading: "Looking...",
+      addressSearchEmpty: "No matches near here.",
+      addressSearchError: "Address search failed. Try again.",
+      addressAppended: "Added {address} to the route.",
+      addressReplaced: "Replaced selected point with {address}."
     },
     rideScreen: {
       kicker: "Ride screen",
@@ -880,7 +890,17 @@ const dictionaries = {
       gpsWaiting: "Esperando puntos GPS. Mantén esta página abierta mientras rodas.",
       gpsLive: "Captura GPS activa con puntos finos. Detén la grabación cuando termines la ruta.",
       sketchActive: "Modo trazo activo. Toca vueltas, puntos de reagrupe o curvas del sendero en el mapa.",
-      recordActive: "Modo ride en vivo activo. Inicia la captura GPS cuando estés rodando y deja esta página abierta."
+      recordActive: "Modo ride en vivo activo. Inicia la captura GPS cuando estés rodando y deja esta página abierta.",
+      addressSearchPlaceholder: "Busca una dirección o lugar",
+      addressSearchModeLabel: "Modo de inserción por dirección",
+      addressSearchAppend: "Agregar",
+      addressSearchReplace: "Reemplazar seleccionado",
+      addressSearchReplaceHint: "Toca primero un punto en el mapa y luego busca para reemplazarlo.",
+      addressSearchLoading: "Buscando...",
+      addressSearchEmpty: "Sin coincidencias cercanas.",
+      addressSearchError: "Falló la búsqueda. Intenta de nuevo.",
+      addressAppended: "Se agregó {address} a la ruta.",
+      addressReplaced: "Se reemplazó el punto seleccionado por {address}."
     },
     rideScreen: {
       kicker: "Pantalla de ride",

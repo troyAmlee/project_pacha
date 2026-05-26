@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
+import AddressSearch from "../components/AddressSearch";
 import FormFeedback from "../components/FormFeedback";
 import RouteMap from "../components/RouteMap";
 import SuggestedRoutes from "../components/SuggestedRoutes";
@@ -16,8 +17,10 @@ import {
   formatDurationMinutes,
   formatMiles,
   getGpsAccuracyMeters,
+  getPathCenter,
   getRoutingWaypoints,
   gpsPositionToPoint,
+  MINNEAPOLIS_CENTER,
   shouldAddGpsPoint
 } from "../utils";
 
@@ -33,7 +36,7 @@ export default function RouteBuilderPage() {
   const navigate = useNavigate();
   const { member } = useAuth();
   const { data, loading, loadBootstrap } = useClubData();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { values, handleChange, setValues } = useForm(emptyForm);
   const [mode, setMode] = useState("draw");
   const [path, setPath] = useState([]);
@@ -47,6 +50,8 @@ export default function RouteBuilderPage() {
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [selectedPointIndex, setSelectedPointIndex] = useState(null);
+  const [addressMode, setAddressMode] = useState("append");
   const watchIdRef = useRef(null);
   const hydratedRouteIdRef = useRef("");
 
@@ -253,10 +258,17 @@ export default function RouteBuilderPage() {
     }
 
     setPath((current) => [...current, point]);
+    setSelectedPointIndex(null);
   }
 
   function handleUndoPoint() {
-    setPath((current) => current.slice(0, -1));
+    setPath((current) => {
+      const next = current.slice(0, -1);
+      setSelectedPointIndex((selected) =>
+        selected != null && selected >= next.length ? null : selected
+      );
+      return next;
+    });
   }
 
   function handleClearPath() {
@@ -267,9 +279,32 @@ export default function RouteBuilderPage() {
     setElapsedMinutes(0);
     setRecordingStartedAt(null);
     setFeedback(null);
+    setSelectedPointIndex(null);
     setGpsStatus(
       mode === "record" ? t("routeBuilder.gpsCleared") : t("routeBuilder.pathCleared")
     );
+  }
+
+  function handlePointSelect(index) {
+    setSelectedPointIndex((current) => (current === index ? null : index));
+  }
+
+  function handleAddressSelect(result) {
+    if (!result?.point) return;
+    if (addressMode === "replace" && selectedPointIndex != null) {
+      setPath((current) => {
+        if (selectedPointIndex >= current.length) return current;
+        const next = current.slice();
+        next[selectedPointIndex] = result.point;
+        return next;
+      });
+      setGpsStatus(t("routeBuilder.addressReplaced", { address: result.primary }));
+      return;
+    }
+
+    setPath((current) => [...current, result.point]);
+    setSelectedPointIndex(null);
+    setGpsStatus(t("routeBuilder.addressAppended", { address: result.primary }));
   }
 
   function startRecording() {
@@ -568,14 +603,27 @@ export default function RouteBuilderPage() {
           </div>
 
           <div className="route-builder__map-panel">
+            {mode === "draw" ? (
+              <AddressSearch
+                proximity={path.length ? getPathCenter(path) : MINNEAPOLIS_CENTER}
+                language={lang}
+                mode={addressMode}
+                canReplace={selectedPointIndex != null}
+                onModeChange={setAddressMode}
+                onSelectResult={handleAddressSelect}
+              />
+            ) : null}
             <RouteMap
               currentAccuracyMeters={currentAccuracyMeters ?? undefined}
               currentPosition={mode === "record" ? currentPosition : null}
               height={520}
               interactive={mode === "draw"}
               onMapClick={handleMapClick}
+              onPointSelect={mode === "draw" ? handlePointSelect : null}
               path={displayPath}
               routeName={values.title}
+              selectablePoints={mode === "draw" ? path : null}
+              selectedPointIndex={mode === "draw" ? selectedPointIndex : null}
               showGreenwayGuide={greenwaySelected}
               startLabel={values.start}
               terrain={values.terrain}

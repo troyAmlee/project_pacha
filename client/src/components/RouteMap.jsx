@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import L from "leaflet";
 import {
   Circle,
+  CircleMarker,
   MapContainer,
   Marker,
   Polyline,
@@ -32,6 +33,9 @@ export default function RouteMap({
   tracking = false,
   onMapClick,
   interactive = false,
+  selectedPointIndex = null,
+  onPointSelect = null,
+  selectablePoints = null,
   height = 360,
   className = "",
   routeName = "",
@@ -323,6 +327,31 @@ export default function RouteMap({
             />
           </>
         ) : null}
+        {interactive && onPointSelect && !navigationMode && (selectablePoints ?? path).length
+          ? (selectablePoints ?? path).map((point, index) => {
+              const isSelected = index === selectedPointIndex;
+              return (
+                <CircleMarker
+                  key={`route-point-${index}`}
+                  center={point}
+                  radius={isSelected ? 11 : 7}
+                  pathOptions={{
+                    color: isSelected ? "#1a73e8" : "#ffffff",
+                    weight: isSelected ? 3 : 2,
+                    fillColor: isSelected ? "#1a73e8" : routeTheme.accent,
+                    fillOpacity: 1
+                  }}
+                  eventHandlers={{
+                    click: (event) => {
+                      // Stop the map's onMapClick handler from also firing.
+                      L.DomEvent.stopPropagation(event);
+                      onPointSelect(index);
+                    }
+                  }}
+                />
+              );
+            })
+          : null}
         {startMarkerPosition ? <Marker icon={startIcon} position={startMarkerPosition} /> : null}
         {finishMarkerPosition ? <Marker icon={finishIcon} position={finishMarkerPosition} /> : null}
         {displayPosition ? (
