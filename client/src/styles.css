@@ -71,10 +71,9 @@ img {
   top: 12px;
   z-index: 10;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 16px 18px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
   margin-bottom: 20px;
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 24px;
@@ -84,9 +83,23 @@ img {
   animation: rise-in 700ms ease both;
 }
 
+.topbar-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.topbar-row--main {
+  justify-content: space-between;
+}
+
+.topbar-row--search {
+  width: 100%;
+}
+
 .topbar-search {
-  flex: 1 1 220px;
-  max-width: 360px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -849,10 +862,8 @@ img {
 
   .topbar {
     top: 8px;
-    padding: 10px 14px;
-    gap: 10px;
-    align-items: center;
-    justify-content: space-between;
+    padding: 10px 12px;
+    gap: 8px;
   }
 
   .topbar-kicker {
@@ -868,17 +879,12 @@ img {
     font-size: 1.4rem;
   }
 
-  .topbar-search {
-    flex: 1 1 auto;
-    max-width: none;
-  }
-
   .topbar-icon-button--menu {
     display: inline-flex;
   }
 
   .topbar-menu-sheet {
-    top: 68px;
+    top: 110px;
     width: calc(100% - 18px);
     padding: 12px;
   }
