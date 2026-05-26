@@ -36,6 +36,7 @@ export default function RouteMap({
   selectedPointIndex = null,
   onPointSelect = null,
   selectablePoints = null,
+  homePoint = null,
   height = 360,
   className = "",
   routeName = "",
@@ -45,7 +46,14 @@ export default function RouteMap({
   showLegend = true
 }) {
   const { t } = useTranslation();
-  const center = getPathCenter(path.length ? path : currentPosition ? [currentPosition] : []);
+  const centerSeed = path.length
+    ? path
+    : currentPosition
+      ? [currentPosition]
+      : Array.isArray(homePoint) && homePoint.length === 2
+        ? [homePoint]
+        : [];
+  const center = getPathCenter(centerSeed);
   const routeTheme = getRouteTheme({ title: routeName, start: startLabel, terrain });
   const guideVisible = showGreenwayGuide || terrain === "greenway";
   const guidePath = guideVisible ? MIDTOWN_GREENWAY_PATH : EMPTY_PATH;

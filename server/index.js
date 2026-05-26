@@ -556,6 +556,14 @@ app.put(
       max: 600,
       fallback: "Ready to meet the crew and trade route notes."
     });
+    // Home is optional. `null` clears it; an array/object is validated as a
+    // coordinate; undefined leaves the previous value untouched so partial
+    // profile edits don't accidentally wipe a saved home.
+    const homeProvided = Object.prototype.hasOwnProperty.call(request.body, "home");
+    const home =
+      homeProvided && request.body.home !== null
+        ? requireCoordinate(request.body.home, "Home location")
+        : null;
 
     let updatedMember;
 
@@ -571,6 +579,9 @@ app.put(
       member.bike = bike;
       member.avatarUrl = avatarUrl;
       member.bio = bio;
+      if (homeProvided) {
+        member.home = home;
+      }
       updatedMember = member;
       return store;
     });

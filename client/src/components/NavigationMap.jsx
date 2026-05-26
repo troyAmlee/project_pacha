@@ -33,7 +33,8 @@ export default function NavigationMap({
   routeName = "",
   startLabel = "",
   terrain = "",
-  showGreenwayGuide = false
+  showGreenwayGuide = false,
+  homePoint = null
 }) {
   const { t } = useTranslation();
   const containerRef = useRef(null);
@@ -127,7 +128,13 @@ export default function NavigationMap({
       : navigationCue.type;
 
   const initialCenter = useMemo(() => {
-    const seed = path.length ? path : currentPosition ? [currentPosition] : [];
+    const seed = path.length
+      ? path
+      : currentPosition
+        ? [currentPosition]
+        : Array.isArray(homePoint) && homePoint.length === 2
+          ? [homePoint]
+          : [];
     return getPathCenter(seed) || MINNEAPOLIS_CENTER;
   }, []); // intentionally fixed at mount
 

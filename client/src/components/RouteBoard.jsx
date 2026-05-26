@@ -29,6 +29,11 @@ export default function RouteBoard() {
                 <Link className="button button--primary" to="/routes/new">
                   {t("home.routeBuildCta")}
                 </Link>
+                {member.home ? (
+                  <Link className="button button--outline" to="/ride/home">
+                    {t("home.rideHomeCta")}
+                  </Link>
+                ) : null}
                 <Link className="button button--outline" to="/groups">
                   {t("home.routeBuildSeeGroups")}
                 </Link>

@@ -16,6 +16,11 @@ export default function ProfileEditForm({ member, onSaved, onCancel }) {
     avatarUrl: member.avatarUrl ?? "",
     bio: member.bio ?? ""
   });
+  const [home, setHome] = useState(
+    Array.isArray(member.home) && member.home.length === 2 ? member.home : null
+  );
+  const [homeStatus, setHomeStatus] = useState(null);
+  const [locating, setLocating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [avatarOk, setAvatarOk] = useState(true);
@@ -23,6 +28,43 @@ export default function ProfileEditForm({ member, onSaved, onCancel }) {
   const bioCount = values.bio.length;
   const bioOver = bioCount > BIO_MAX;
   const previewUrl = useMemo(() => values.avatarUrl.trim(), [values.avatarUrl]);
+
+  function captureCurrentLocation() {
+    if (!navigator.geolocation) {
+      setHomeStatus({ type: "error", message: t("profileEdit.homeGeoUnsupported") });
+      return;
+    }
+
+    setLocating(true);
+    setHomeStatus(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const next = [
+          Number(position.coords.latitude.toFixed(6)),
+          Number(position.coords.longitude.toFixed(6))
+        ];
+        setHome(next);
+        setHomeStatus({ type: "success", message: t("profileEdit.homeCaptured") });
+        setLocating(false);
+      },
+      (error) => {
+        setHomeStatus({
+          type: "error",
+          message:
+            error.code === 1
+              ? t("profileEdit.homeGeoDenied")
+              : t("profileEdit.homeGeoFailed")
+        });
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
+  function clearHome() {
+    setHome(null);
+    setHomeStatus({ type: "success", message: t("profileEdit.homeCleared") });
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -34,7 +76,7 @@ export default function ProfileEditForm({ member, onSaved, onCancel }) {
     setFeedback(null);
 
     try {
-      const payload = await api.putJson("/api/riders/me", values);
+      const payload = await api.putJson("/api/riders/me", { ...values, home });
       onSaved(payload.member);
     } catch (error) {
       setFeedback({ type: "error", message: error.message });
@@ -115,6 +157,50 @@ export default function ProfileEditForm({ member, onSaved, onCancel }) {
                 placeholder={t("profileEdit.labelBikePlaceholder")}
               />
             </label>
+          </fieldset>
+
+          <fieldset className="profile-edit__group">
+            <legend>{t("profileEdit.legendHome")}</legend>
+            <p className="profile-edit__hint">{t("profileEdit.homeHint")}</p>
+            <div className="profile-edit__home">
+              <div className="profile-edit__home-readout" aria-live="polite">
+                {home
+                  ? t("profileEdit.homeCoords", {
+                      lat: home[0].toFixed(5),
+                      lng: home[1].toFixed(5)
+                    })
+                  : t("profileEdit.homeNone")}
+              </div>
+              <div className="profile-edit__home-actions">
+                <button
+                  type="button"
+                  className="button button--outline button--sm"
+                  onClick={captureCurrentLocation}
+                  disabled={locating || busy}
+                >
+                  {locating ? t("profileEdit.homeLocating") : t("profileEdit.homeUseCurrent")}
+                </button>
+                {home ? (
+                  <button
+                    type="button"
+                    className="button button--ghost button--sm"
+                    onClick={clearHome}
+                    disabled={busy}
+                  >
+                    {t("profileEdit.homeClear")}
+                  </button>
+                ) : null}
+              </div>
+              {homeStatus ? (
+                <p
+                  className={`profile-edit__hint${
+                    homeStatus.type === "error" ? " profile-edit__hint--warn" : ""
+                  }`}
+                >
+                  {homeStatus.message}
+                </p>
+              ) : null}
+            </div>
           </fieldset>
 
           <fieldset className="profile-edit__group">

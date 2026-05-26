@@ -103,6 +103,7 @@ const dictionaries = {
         "Draw a route point by point or capture one live with GPS. Every saved route can open in the ride screen later with the line and Greenway guide intact.",
       routeBuildCta: "Open route builder",
       routeBuildSeeGroups: "See groups",
+      rideHomeCta: "Ride home",
       routeBoardEmpty: "No routes shared yet.",
       suggestedClubTitle: "Collective picks",
       suggestedClubDescription:
@@ -213,7 +214,20 @@ const dictionaries = {
       counter: "{count} / {max}",
       bioOverLimit: "Bio is over the {max}-character limit.",
       saveButton: "Save profile",
-      saveBusy: "Saving..."
+      saveBusy: "Saving...",
+      legendHome: "Home location",
+      homeHint:
+        "Saved privately. Used to start new routes from home, center the map, and power Ride home.",
+      homeCoords: "Home: {lat}, {lng}",
+      homeNone: "No home saved yet.",
+      homeUseCurrent: "Use my current location",
+      homeLocating: "Locating...",
+      homeClear: "Clear home",
+      homeCaptured: "Home location captured. Save the profile to keep it.",
+      homeCleared: "Home cleared. Save the profile to confirm.",
+      homeGeoUnsupported: "This browser cannot share its location.",
+      homeGeoDenied: "Location access was denied. Allow geolocation to set home.",
+      homeGeoFailed: "Could not capture a location fix. Try again."
     },
     metrics: {
       milesBiked: "Miles biked",
@@ -370,7 +384,14 @@ const dictionaries = {
       addressSearchEmpty: "No matches near here.",
       addressSearchError: "Address search failed. Try again.",
       addressAppended: "Added {address} to the route.",
-      addressReplaced: "Replaced selected point with {address}."
+      addressReplaced: "Replaced selected point with {address}.",
+      startPrompt: "Start this route from...",
+      startFromHome: "Start at home",
+      startFromCurrent: "Start at current location",
+      startSetHomeHint: "Save a home address in your profile to enable Start at home.",
+      startedFromHome: "Started the route at your saved home.",
+      startedFromCurrent: "Started the route at your current location.",
+      locatingStart: "Locating you for the first point..."
     },
     rideScreen: {
       kicker: "Ride screen",
@@ -399,6 +420,7 @@ const dictionaries = {
       voiceStatusOn: "Voice guidance on. Turn prompts will announce as they approach.",
       voiceStatusWait: "Voice guidance waits for GPS tracking.",
       voiceUnsupported: "This browser does not support spoken navigation prompts.",
+      previewFromHome: "Previewing the ride plan from your saved home until GPS locks.",
       bearingModeLabel: "Map bearing mode",
       bearingRoute: "Route",
       bearingCompass: "Compass",
@@ -469,6 +491,17 @@ const dictionaries = {
       metaStart: "Start",
       metaTerrain: "Terrain",
       metaNotes: "Notes"
+    },
+    rideHome: {
+      kicker: "Ride home",
+      title: "Heading home",
+      start: "Current location",
+      remaining: "{miles} to home",
+      arrived: "You're home. Nice ride.",
+      noHomeTitle: "Set a home location first",
+      noHomeBody:
+        "Ride home routes from your current location to a saved home address. Add one in your profile to use this.",
+      setHomeCta: "Open profile"
     },
     routeMap: {
       legendRoute: "Route line",
@@ -632,6 +665,7 @@ const dictionaries = {
         "Traza una ruta punto por punto o captúrala en vivo con GPS. Cada ruta guardada se abre después en la pantalla de ride con la línea y la guía del Greenway intactas.",
       routeBuildCta: "Abrir creador de rutas",
       routeBuildSeeGroups: "Ver grupos",
+      rideHomeCta: "Ride a casa",
       routeBoardEmpty: "Aún no hay rutas compartidas.",
       suggestedClubTitle: "Elecciones del colectivo",
       suggestedClubDescription:
@@ -743,7 +777,20 @@ const dictionaries = {
       counter: "{count} / {max}",
       bioOverLimit: "La bio rebasa el límite de {max} caracteres.",
       saveButton: "Guardar perfil",
-      saveBusy: "Guardando..."
+      saveBusy: "Guardando...",
+      legendHome: "Ubicación de casa",
+      homeHint:
+        "Se guarda en privado. Sirve para iniciar rutas desde casa, centrar el mapa y activar Ride a casa.",
+      homeCoords: "Casa: {lat}, {lng}",
+      homeNone: "Aún no guardas tu casa.",
+      homeUseCurrent: "Usar mi ubicación actual",
+      homeLocating: "Localizando...",
+      homeClear: "Quitar casa",
+      homeCaptured: "Ubicación capturada. Guarda el perfil para conservarla.",
+      homeCleared: "Casa eliminada. Guarda el perfil para confirmar.",
+      homeGeoUnsupported: "Este navegador no puede compartir su ubicación.",
+      homeGeoDenied: "Se denegó el acceso a la ubicación. Permítelo para guardar casa.",
+      homeGeoFailed: "No se pudo capturar la ubicación. Intenta de nuevo."
     },
     metrics: {
       milesBiked: "Millas rodadas",
@@ -900,7 +947,14 @@ const dictionaries = {
       addressSearchEmpty: "Sin coincidencias cercanas.",
       addressSearchError: "Falló la búsqueda. Intenta de nuevo.",
       addressAppended: "Se agregó {address} a la ruta.",
-      addressReplaced: "Se reemplazó el punto seleccionado por {address}."
+      addressReplaced: "Se reemplazó el punto seleccionado por {address}.",
+      startPrompt: "Inicia esta ruta desde...",
+      startFromHome: "Iniciar en casa",
+      startFromCurrent: "Iniciar en mi ubicación",
+      startSetHomeHint: "Guarda una casa en tu perfil para habilitar Iniciar en casa.",
+      startedFromHome: "Ruta iniciada en tu casa guardada.",
+      startedFromCurrent: "Ruta iniciada en tu ubicación actual.",
+      locatingStart: "Localizándote para el primer punto..."
     },
     rideScreen: {
       kicker: "Pantalla de ride",
@@ -929,6 +983,7 @@ const dictionaries = {
       voiceStatusOn: "Guía por voz activa. Las vueltas se anunciarán al acercarse.",
       voiceStatusWait: "La guía por voz espera al rastreo GPS.",
       voiceUnsupported: "Este navegador no soporta indicaciones habladas.",
+      previewFromHome: "Mostrando el plan del ride desde tu casa hasta que el GPS fije.",
       bearingModeLabel: "Modo de orientación del mapa",
       bearingRoute: "Ruta",
       bearingCompass: "Brújula",
@@ -999,6 +1054,17 @@ const dictionaries = {
       metaStart: "Inicio",
       metaTerrain: "Terreno",
       metaNotes: "Notas"
+    },
+    rideHome: {
+      kicker: "Ride a casa",
+      title: "Rumbo a casa",
+      start: "Ubicación actual",
+      remaining: "{miles} a casa",
+      arrived: "Llegaste. Buen ride.",
+      noHomeTitle: "Primero guarda tu casa",
+      noHomeBody:
+        "Ride a casa traza una ruta desde tu ubicación actual hasta una casa guardada. Agrégala en tu perfil para usarlo.",
+      setHomeCta: "Abrir perfil"
     },
     routeMap: {
       legendRoute: "Línea de ruta",

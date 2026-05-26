@@ -86,9 +86,15 @@ export default function RideScreenPage() {
     return distanceFromPointToPathMiles(currentPosition, navigationPath);
   }, [currentPosition, navigationPath]);
 
+  // Before GPS locks, fall back to the saved home address so the rider sees
+  // the whole plan (home → route start → route) on screen instead of an empty
+  // "waiting for GPS" placeholder. Once a real fix arrives, currentPosition
+  // takes over and the puck switches to live.
+  const previewPosition = currentPosition ?? member?.home ?? null;
+  const isPreviewingFromHome = !currentPosition && Boolean(member?.home);
   const navigationState = useMemo(
     () =>
-      getRouteNavigationState(currentPosition, navigationPath, {
+      getRouteNavigationState(previewPosition, navigationPath, {
         plannedRoutePath: navigationPath,
         routeSteps: routedRoute?.steps,
         routingSource: routedRoute?.source ?? "local",
@@ -97,7 +103,7 @@ export default function RideScreenPage() {
         toStartSteps: routedToStart?.steps,
         toStartSource: routedToStart?.source ?? "local"
       }),
-    [currentPosition, navigationPath, routeLegStartPoint, routedRoute, routedToStart]
+    [previewPosition, navigationPath, routeLegStartPoint, routedRoute, routedToStart]
   );
   const routingProviderLabel = formatRoutingProviderLabel(
     routedToStart?.source ?? routedRoute?.source
@@ -540,6 +546,7 @@ export default function RideScreenPage() {
               movementHeadingDegrees={currentHeadingDegrees}
               currentPosition={currentPosition}
               height={640}
+              homePoint={member?.home ?? null}
               navigationState={navigationState}
               path={navigationPath}
               routeName={route.title}
@@ -556,6 +563,11 @@ export default function RideScreenPage() {
               <p className="group-card__eyebrow">{t("rideScreen.cueKicker")}</p>
               <h3>{routeStatus.headline}</h3>
               <p>{routeStatus.detail}</p>
+              {isPreviewingFromHome ? (
+                <p className="ride-status-card__preview">
+                  {t("rideScreen.previewFromHome")}
+                </p>
+              ) : null}
               <div className="ride-status-card__chips">
                 <span className="ride-status-card__chip">{t("rideScreen.cueStartLabel", { start: route.start })}</span>
                 <span className="ride-status-card__chip">
