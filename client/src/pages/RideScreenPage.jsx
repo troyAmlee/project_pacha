@@ -95,10 +95,9 @@ export default function RideScreenPage() {
         routeLegStartPoint,
         toStartPath: routedToStart?.path,
         toStartSteps: routedToStart?.steps,
-        toStartSource: routedToStart?.source ?? "local",
-        accuracyMeters: currentAccuracyMeters
+        toStartSource: routedToStart?.source ?? "local"
       }),
-    [currentPosition, currentAccuracyMeters, navigationPath, routeLegStartPoint, routedRoute, routedToStart]
+    [currentPosition, navigationPath, routeLegStartPoint, routedRoute, routedToStart]
   );
   const routingProviderLabel = formatRoutingProviderLabel(
     routedToStart?.source ?? routedRoute?.source
