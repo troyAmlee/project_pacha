@@ -1322,6 +1322,26 @@ img {
   font-variant-numeric: tabular-nums;
 }
 
+.profile-edit__home {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-edit__home-readout {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.04);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  color: #111827;
+}
+
+.profile-edit__home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .profile-edit__counter--over {
   color: var(--danger);
   font-weight: 700;
@@ -1988,6 +2008,44 @@ img {
   gap: 10px;
 }
 
+.route-builder__map-stack {
+  position: relative;
+}
+
+.route-builder__start-overlay {
+  position: absolute;
+  inset: auto 0 16px 0;
+  z-index: 800;
+  margin: 0 auto;
+  max-width: min(420px, calc(100% - 32px));
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 16px;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
+  display: grid;
+  gap: 10px;
+  text-align: center;
+}
+
+.route-builder__start-overlay-prompt {
+  margin: 0;
+  font-weight: 600;
+  color: #111827;
+}
+
+.route-builder__start-overlay-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.route-builder__start-overlay-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 .address-search {
   display: grid;
   gap: 8px;
@@ -2091,6 +2149,16 @@ img {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.ride-status-card__preview {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(26, 115, 232, 0.08);
+  border-left: 3px solid #1a73e8;
+  color: #1a3d8a;
+  font-size: 0.85rem;
 }
 
 .ride-status-card__chip {

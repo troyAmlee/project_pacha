@@ -40,12 +40,14 @@ export function readSession(request) {
 }
 
 // Roster listings are public, so never leak credentials or contact details.
+// Home location is treated as a personal address — it is the rider's literal
+// front door — and is intentionally omitted from the public shape.
 export function toPublicMember(member) {
   if (!member) {
     return null;
   }
 
-  const { passwordHash, email, ...publicFields } = member;
+  const { passwordHash, email, home, ...publicFields } = member;
   return publicFields;
 }
 

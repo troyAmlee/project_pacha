@@ -289,6 +289,37 @@ export default function RouteBuilderPage() {
     setSelectedPointIndex((current) => (current === index ? null : index));
   }
 
+  function handleStartFromHome() {
+    if (!member?.home) return;
+    setPath([member.home]);
+    setSelectedPointIndex(null);
+    setGpsStatus(t("routeBuilder.startedFromHome"));
+  }
+
+  function handleStartFromCurrent() {
+    if (!navigator.geolocation) {
+      setFeedback({ type: "error", message: t("rideScreen.geoUnsupported") });
+      return;
+    }
+    setGpsStatus(t("routeBuilder.locatingStart"));
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const point = gpsPositionToPoint(position);
+        setPath([point]);
+        setSelectedPointIndex(null);
+        setGpsStatus(t("routeBuilder.startedFromCurrent"));
+      },
+      (error) => {
+        setGpsStatus(t("routeBuilder.gpsClickStart"));
+        setFeedback({
+          type: "error",
+          message: error.code === 1 ? t("rideScreen.geoDenied") : t("rideScreen.geoFailed")
+        });
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
   function handleAddressSelect(result) {
     if (!result?.point) return;
     if (addressMode === "replace" && selectedPointIndex != null) {
@@ -605,7 +636,11 @@ export default function RouteBuilderPage() {
           <div className="route-builder__map-panel">
             {mode === "draw" ? (
               <AddressSearch
-                proximity={path.length ? getPathCenter(path) : MINNEAPOLIS_CENTER}
+                proximity={
+                  path.length
+                    ? getPathCenter(path)
+                    : member?.home ?? MINNEAPOLIS_CENTER
+                }
                 language={lang}
                 mode={addressMode}
                 canReplace={selectedPointIndex != null}
@@ -613,12 +648,44 @@ export default function RouteBuilderPage() {
                 onSelectResult={handleAddressSelect}
               />
             ) : null}
-            <RouteMap
+            <div className="route-builder__map-stack">
+              {mode === "draw" && path.length === 0 ? (
+                <div className="route-builder__start-overlay">
+                  <p className="route-builder__start-overlay-prompt">
+                    {t("routeBuilder.startPrompt")}
+                  </p>
+                  <div className="route-builder__start-overlay-actions">
+                    {member?.home ? (
+                      <button
+                        type="button"
+                        className="button button--primary button--sm"
+                        onClick={handleStartFromHome}
+                      >
+                        {t("routeBuilder.startFromHome")}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="button button--outline button--sm"
+                      onClick={handleStartFromCurrent}
+                    >
+                      {t("routeBuilder.startFromCurrent")}
+                    </button>
+                  </div>
+                  {!member?.home ? (
+                    <p className="route-builder__start-overlay-hint">
+                      {t("routeBuilder.startSetHomeHint")}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+              <RouteMap
               currentAccuracyMeters={currentAccuracyMeters ?? undefined}
               currentPosition={mode === "record" ? currentPosition : null}
               height={520}
               interactive={mode === "draw"}
               onMapClick={handleMapClick}
+              homePoint={member?.home ?? null}
               onPointSelect={mode === "draw" ? handlePointSelect : null}
               path={displayPath}
               routeName={values.title}
@@ -628,6 +695,7 @@ export default function RouteBuilderPage() {
               startLabel={values.start}
               terrain={values.terrain}
             />
+            </div>
             <p className="route-builder__map-note">
               {mode === "draw" ? t("routeBuilder.mapNoteSketch") : t("routeBuilder.mapNoteRecord")}
             </p>
