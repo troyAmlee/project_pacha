@@ -11,14 +11,11 @@ export default function TopBar({ minimal = false }) {
   const { t, lang } = useTranslation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
 
-  // Close both sheets on route change-ish events (keyboard escape, browser back).
   useEffect(() => {
     function handleKey(event) {
       if (event.key === "Escape") {
         setMenuOpen(false);
-        setSearchOpen(false);
       }
     }
     window.addEventListener("keydown", handleKey);
@@ -27,7 +24,6 @@ export default function TopBar({ minimal = false }) {
 
   function handleAddressSelect(result) {
     if (!result?.point) return;
-    setSearchOpen(false);
     setMenuOpen(false);
     const [lat, lng] = result.point;
     const params = new URLSearchParams({
@@ -50,8 +46,7 @@ export default function TopBar({ minimal = false }) {
 
         {minimal ? null : (
           <>
-            {/* Desktop inline search */}
-            <div className="topbar-search topbar-search--inline">
+            <div className="topbar-search">
               <AddressSearch
                 language={lang}
                 onSelectResult={handleAddressSelect}
@@ -101,53 +96,17 @@ export default function TopBar({ minimal = false }) {
         </div>
 
         {minimal ? null : (
-          <>
-            <button
-              type="button"
-              className="topbar-icon-button topbar-icon-button--search"
-              aria-label={t("topbar.searchOpen")}
-              aria-expanded={searchOpen}
-              onClick={() => {
-                setSearchOpen((current) => !current);
-                setMenuOpen(false);
-              }}
-            >
-              <SearchIcon />
-            </button>
-            <button
-              type="button"
-              className="topbar-icon-button topbar-icon-button--menu"
-              aria-label={menuOpen ? t("topbar.menuClose") : t("topbar.menuOpen")}
-              aria-expanded={menuOpen}
-              onClick={() => {
-                setMenuOpen((current) => !current);
-                setSearchOpen(false);
-              }}
-            >
-              {menuOpen ? <CloseIcon /> : <BurgerIcon />}
-            </button>
-          </>
-        )}
-      </header>
-
-      {!minimal && searchOpen ? (
-        <div className="topbar-search-sheet">
-          <AddressSearch
-            language={lang}
-            onSelectResult={handleAddressSelect}
-            placeholder={t("topbar.searchPlaceholder")}
-            showModeToggle={false}
-            autoFocus
-          />
           <button
             type="button"
-            className="button button--ghost button--sm topbar-search-sheet__close"
-            onClick={() => setSearchOpen(false)}
+            className="topbar-icon-button topbar-icon-button--menu"
+            aria-label={menuOpen ? t("topbar.menuClose") : t("topbar.menuOpen")}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((current) => !current)}
           >
-            {t("common.cancel")}
+            {menuOpen ? <CloseIcon /> : <BurgerIcon />}
           </button>
-        </div>
-      ) : null}
+        )}
+      </header>
 
       {!minimal && menuOpen ? (
         <div className="topbar-menu-sheet" role="dialog" aria-label={t("topbar.menuLabel")}>
@@ -210,15 +169,6 @@ export default function TopBar({ minimal = false }) {
 
       <PapelPicado />
     </>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-      <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" />
-      <line x1="16" y1="16" x2="20.5" y2="20.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
   );
 }
 
