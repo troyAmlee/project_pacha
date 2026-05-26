@@ -29,7 +29,12 @@ const dictionaries = {
       navRoutes: "Routes",
       navGroups: "Groups",
       navPhotos: "Photos",
-      navJournal: "Journal"
+      navJournal: "Journal",
+      searchPlaceholder: "Search an address to ride to",
+      searchOpen: "Search an address",
+      menuOpen: "Open menu",
+      menuClose: "Close menu",
+      menuLabel: "Main menu"
     },
     auth: {
       loginKicker: "Member login",
@@ -503,6 +508,16 @@ const dictionaries = {
         "Ride home routes from your current location to a saved home address. Add one in your profile to use this.",
       setHomeCta: "Open profile"
     },
+    rideTo: {
+      kicker: "Ride to address",
+      start: "Current location",
+      remaining: "{miles} to go",
+      arrived: "You've arrived.",
+      fallbackLabel: "Selected address",
+      noDestinationTitle: "No destination set",
+      noDestinationBody:
+        "Pick an address from the nav-bar search to start a ride from your current location."
+    },
     routeMap: {
       legendRoute: "Route line",
       legendTrail: "Your trail",
@@ -589,7 +604,12 @@ const dictionaries = {
       navRoutes: "Rutas",
       navGroups: "Grupos",
       navPhotos: "Fotos",
-      navJournal: "Diario"
+      navJournal: "Diario",
+      searchPlaceholder: "Busca una dirección hacia donde ir",
+      searchOpen: "Buscar una dirección",
+      menuOpen: "Abrir menú",
+      menuClose: "Cerrar menú",
+      menuLabel: "Menú principal"
     },
     auth: {
       loginKicker: "Acceso de miembros",
@@ -1065,6 +1085,16 @@ const dictionaries = {
       noHomeBody:
         "Ride a casa traza una ruta desde tu ubicación actual hasta una casa guardada. Agrégala en tu perfil para usarlo.",
       setHomeCta: "Abrir perfil"
+    },
+    rideTo: {
+      kicker: "Ride a dirección",
+      start: "Ubicación actual",
+      remaining: "{miles} para llegar",
+      arrived: "Llegaste a destino.",
+      fallbackLabel: "Dirección seleccionada",
+      noDestinationTitle: "Sin destino",
+      noDestinationBody:
+        "Elige una dirección desde la búsqueda del nav-bar para iniciar un ride desde tu ubicación actual."
     },
     routeMap: {
       legendRoute: "Línea de ruta",

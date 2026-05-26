@@ -6,6 +6,7 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RiderProfilePage from "./pages/RiderProfilePage";
 import RideHomePage from "./pages/RideHomePage";
+import RideToAddressPage from "./pages/RideToAddressPage";
 import RideScreenPage from "./pages/RideScreenPage";
 import RouteBuilderPage from "./pages/RouteBuilderPage";
 import SignupPage from "./pages/SignupPage";
@@ -48,6 +49,14 @@ export default function App() {
         element={
           <RequireAuth>
             <RideHomePage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/ride/to"
+        element={
+          <RequireAuth>
+            <RideToAddressPage />
           </RequireAuth>
         }
       />

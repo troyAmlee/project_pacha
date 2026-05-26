@@ -12,7 +12,10 @@ export default function AddressSearch({
   canReplace = true,
   onSelectResult,
   onModeChange,
-  disabled = false
+  disabled = false,
+  showModeToggle = true,
+  placeholder = null,
+  autoFocus = false
 }) {
   const { t } = useTranslation();
   const listboxId = useId();
@@ -103,30 +106,33 @@ export default function AddressSearch({
 
   return (
     <div className="address-search">
-      <div className="address-search__mode" role="group" aria-label={t("routeBuilder.addressSearchModeLabel")}>
-        <button
-          type="button"
-          className={`button button--outline button--sm${mode === "append" ? " is-active" : ""}`}
-          onClick={() => onModeChange?.("append")}
-        >
-          {t("routeBuilder.addressSearchAppend")}
-        </button>
-        <button
-          type="button"
-          className={`button button--outline button--sm${mode === "replace" ? " is-active" : ""}`}
-          onClick={() => onModeChange?.("replace")}
-          disabled={!canReplace}
-        >
-          {t("routeBuilder.addressSearchReplace")}
-        </button>
-      </div>
+      {showModeToggle ? (
+        <div className="address-search__mode" role="group" aria-label={t("routeBuilder.addressSearchModeLabel")}>
+          <button
+            type="button"
+            className={`button button--outline button--sm${mode === "append" ? " is-active" : ""}`}
+            onClick={() => onModeChange?.("append")}
+          >
+            {t("routeBuilder.addressSearchAppend")}
+          </button>
+          <button
+            type="button"
+            className={`button button--outline button--sm${mode === "replace" ? " is-active" : ""}`}
+            onClick={() => onModeChange?.("replace")}
+            disabled={!canReplace}
+          >
+            {t("routeBuilder.addressSearchReplace")}
+          </button>
+        </div>
+      ) : null}
 
       <div className="address-search__combobox">
         <input
           ref={inputRef}
           type="search"
           className="address-search__input"
-          placeholder={t("routeBuilder.addressSearchPlaceholder")}
+          placeholder={placeholder ?? t("routeBuilder.addressSearchPlaceholder")}
+          autoFocus={autoFocus}
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -182,7 +188,7 @@ export default function AddressSearch({
         ) : null}
       </div>
 
-      {mode === "replace" && !canReplace ? (
+      {showModeToggle && mode === "replace" && !canReplace ? (
         <p className="address-search__hint">{t("routeBuilder.addressSearchReplaceHint")}</p>
       ) : null}
     </div>
