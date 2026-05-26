@@ -65,13 +65,6 @@ export default function TopBar({ minimal = false }) {
                 <Link className="topbar-rider" to={`/riders/${member.id}`}>
                   {member.name}
                 </Link>
-                <button
-                  className="button button--outline button--sm"
-                  type="button"
-                  onClick={() => void logout()}
-                >
-                  {t("common.logOut")}
-                </button>
               </>
             ) : (
               <>
@@ -111,7 +104,7 @@ export default function TopBar({ minimal = false }) {
 
       {!minimal && menuOpen ? (
         <div className="topbar-menu-sheet" role="dialog" aria-label={t("topbar.menuLabel")}>
-          <nav className="topbar-menu-sheet__nav" aria-label="Primary">
+          <nav className="topbar-menu-sheet__nav topbar-menu-sheet__mobile-only" aria-label="Primary">
             <a href="#join" onClick={() => setMenuOpen(false)}>{t("topbar.navRoster")}</a>
             <a href="#routes" onClick={() => setMenuOpen(false)}>{t("topbar.navRoutes")}</a>
             <Link to="/groups" onClick={() => setMenuOpen(false)}>{t("topbar.navGroups")}</Link>
@@ -122,14 +115,14 @@ export default function TopBar({ minimal = false }) {
             {member ? (
               <>
                 <Link
-                  className="button button--outline button--sm"
+                  className="button button--outline button--sm topbar-menu-sheet__mobile-only"
                   to="/routes/new"
                   onClick={() => setMenuOpen(false)}
                 >
                   {t("common.newRoute")}
                 </Link>
                 <Link
-                  className="button button--ghost button--sm"
+                  className="button button--ghost button--sm topbar-menu-sheet__mobile-only"
                   to={`/riders/${member.id}`}
                   onClick={() => setMenuOpen(false)}
                 >
@@ -149,14 +142,14 @@ export default function TopBar({ minimal = false }) {
             ) : (
               <>
                 <Link
-                  className="button button--outline button--sm"
+                  className="button button--outline button--sm topbar-menu-sheet__mobile-only"
                   to="/login"
                   onClick={() => setMenuOpen(false)}
                 >
                   {t("common.logIn")}
                 </Link>
                 <Link
-                  className="button button--primary button--sm"
+                  className="button button--primary button--sm topbar-menu-sheet__mobile-only"
                   to="/signup"
                   onClick={() => setMenuOpen(false)}
                 >

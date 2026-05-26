@@ -104,7 +104,7 @@ img {
 }
 
 .topbar-icon-button {
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 40px;
@@ -161,6 +161,16 @@ img {
   gap: 8px;
   padding-top: 8px;
   border-top: 1px solid rgba(26, 26, 26, 0.08);
+}
+
+@media (min-width: 721px) {
+  .topbar-menu-sheet__mobile-only {
+    display: none;
+  }
+  .topbar-menu-sheet__auth {
+    border-top: 0;
+    padding-top: 0;
+  }
 }
 
 .topbar-kicker,
@@ -877,10 +887,6 @@ img {
 
   .brandmark {
     font-size: 1.4rem;
-  }
-
-  .topbar-icon-button--menu {
-    display: inline-flex;
   }
 
   .topbar-menu-sheet {
