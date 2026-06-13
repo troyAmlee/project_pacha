@@ -1,17 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import DirectionsPanel from "../components/DirectionsPanel";
 import NavigationMap from "../components/NavigationMap";
 import TopBar from "../components/TopBar";
 import { api } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { useGpsTracker } from "../hooks/useGpsTracker";
+import { useRideTrail } from "../hooks/useRideTrail";
+import { useVoiceNavigation } from "../hooks/useVoiceNavigation";
 import { useTranslation } from "../i18n";
+import { buildDirectionSections, formatRoutingProviderLabel } from "../lib/directionSteps";
 import {
-  GPS_CAPTURE_OPTIONS,
   distanceBetweenPointsMiles,
+  formatDurationMinutes,
+  formatMiles,
   formatNavigationDistance,
-  getGpsAccuracyMeters,
-  getRouteNavigationState,
-  gpsPositionToPoint
+  getRouteNavigationState
 } from "../utils";
 
 const ARRIVAL_THRESHOLD_MILES = 0.05;
@@ -21,12 +25,9 @@ export default function RideToAddressPage() {
   const { member } = useAuth();
   const { t } = useTranslation();
   const [params] = useSearchParams();
-  const [currentPosition, setCurrentPosition] = useState(null);
-  const [currentAccuracyMeters, setCurrentAccuracyMeters] = useState(null);
-  const [path, setPath] = useState([]);
-  const [routeSource, setRouteSource] = useState(null);
+  const [routedRoute, setRoutedRoute] = useState(null);
   const [error, setError] = useState(null);
-  const watchIdRef = useRef(null);
+  const [directionsOpen, setDirectionsOpen] = useState(false);
 
   const destination = useMemo(() => {
     const lat = Number(params.get("lat"));
@@ -38,42 +39,48 @@ export default function RideToAddressPage() {
 
   const destinationLabel = params.get("label") || t("rideTo.fallbackLabel");
 
+  const {
+    currentPosition,
+    currentAccuracyMeters,
+    currentHeadingDegrees,
+    tracking
+  } = useGpsTracker({
+    autoStart: true,
+    onError: ({ code }) => {
+      setError(
+        code === "unsupported"
+          ? t("rideScreen.geoUnsupported")
+          : code === "denied"
+            ? t("rideScreen.geoDenied")
+            : t("rideScreen.geoFailed")
+      );
+    }
+  });
+
+  const { trail, trailMiles, rideStartedAt, elapsedMinutes, startRide } = useRideTrail({
+    currentPosition,
+    tracking
+  });
+
   useEffect(() => {
-    if (!destination || !navigator.geolocation) {
-      if (!navigator.geolocation) setError(t("rideScreen.geoUnsupported"));
+    if (!rideStartedAt) {
+      startRide();
+    }
+  }, [rideStartedAt, startRide]);
+
+  useEffect(() => {
+    if (!destination || !currentPosition) {
       return undefined;
     }
 
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (position) => {
-        setCurrentPosition(gpsPositionToPoint(position));
-        setCurrentAccuracyMeters(getGpsAccuracyMeters(position));
-      },
-      (geoError) => {
-        setError(
-          geoError.code === 1 ? t("rideScreen.geoDenied") : t("rideScreen.geoFailed")
-        );
-      },
-      GPS_CAPTURE_OPTIONS
-    );
-
-    return () => {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-    };
-  }, [destination, t]);
-
-  useEffect(() => {
-    if (!destination || !currentPosition) return undefined;
-
-    const cachedOrigin = path[0];
+    const cachedOrigin = routedRoute?.fetchedFromPoint;
     const driftedTooFar =
       cachedOrigin &&
       distanceBetweenPointsMiles(currentPosition, cachedOrigin) > REROUTE_DRIFT_MILES;
 
-    if (cachedOrigin && !driftedTooFar) return undefined;
+    if (cachedOrigin && !driftedTooFar) {
+      return undefined;
+    }
 
     let cancelled = false;
     api
@@ -81,31 +88,39 @@ export default function RideToAddressPage() {
       .then((payload) => {
         if (cancelled) return;
         if (Array.isArray(payload?.path) && payload.path.length >= 2) {
-          setPath(payload.path);
-          setRouteSource(payload.source ?? "local");
+          setRoutedRoute({ ...payload, fetchedFromPoint: currentPosition });
         } else {
-          setPath([currentPosition, destination]);
-          setRouteSource("local");
+          setRoutedRoute({
+            path: [currentPosition, destination],
+            source: "local",
+            fetchedFromPoint: currentPosition
+          });
         }
       })
       .catch(() => {
         if (cancelled) return;
-        setPath([currentPosition, destination]);
-        setRouteSource("local");
+        setRoutedRoute({
+          path: [currentPosition, destination],
+          source: "local",
+          fetchedFromPoint: currentPosition
+        });
       });
 
     return () => {
       cancelled = true;
     };
-  }, [destination, currentPosition, path]);
+  }, [destination, currentPosition, routedRoute?.fetchedFromPoint]);
+
+  const path = routedRoute?.path ?? [];
 
   const navigationState = useMemo(() => {
     if (path.length < 2 || !currentPosition) return null;
     return getRouteNavigationState(currentPosition, path, {
       plannedRoutePath: path,
-      routingSource: routeSource ?? "local"
+      routeSteps: routedRoute?.steps,
+      routingSource: routedRoute?.source ?? "local"
     });
-  }, [currentPosition, path, routeSource]);
+  }, [currentPosition, path, routedRoute?.steps, routedRoute?.source]);
 
   const distanceToDestinationMiles = useMemo(() => {
     if (!currentPosition || !destination) return null;
@@ -115,6 +130,23 @@ export default function RideToAddressPage() {
   const arrived =
     distanceToDestinationMiles != null &&
     distanceToDestinationMiles <= ARRIVAL_THRESHOLD_MILES;
+
+  const directionSections = useMemo(
+    () => buildDirectionSections({ route: null, routedRoute, routedToStart: null, t }),
+    [routedRoute, t]
+  );
+  const totalDirectionSteps = directionSections.reduce(
+    (total, section) => total + section.steps.length,
+    0
+  );
+  const routingProviderLabel = formatRoutingProviderLabel(routedRoute?.source);
+
+  const { voiceEnabled, voiceStatus, toggleVoice } = useVoiceNavigation({
+    navigationState,
+    tracking,
+    t,
+    onUnsupported: (message) => setError(message)
+  });
 
   if (!destination) {
     return (
@@ -160,6 +192,7 @@ export default function RideToAddressPage() {
         <div className="ride-screen__map-panel">
           <NavigationMap
             currentAccuracyMeters={currentAccuracyMeters ?? undefined}
+            movementHeadingDegrees={currentHeadingDegrees}
             currentPosition={currentPosition}
             height={620}
             homePoint={member?.home ?? null}
@@ -167,8 +200,51 @@ export default function RideToAddressPage() {
             path={path}
             routeName={destinationLabel}
             startLabel={t("rideTo.start")}
-            tracking={Boolean(currentPosition)}
+            trail={trail}
+            tracking={tracking}
           />
+        </div>
+
+        <div className="ride-status-card__actions">
+          <button
+            aria-controls="directions-panel"
+            aria-expanded={directionsOpen}
+            className={`button button--primary button--sm${directionsOpen ? " is-active" : ""}`}
+            onClick={() => setDirectionsOpen((current) => !current)}
+            type="button"
+          >
+            {directionsOpen ? t("rideScreen.directionsHide") : t("rideScreen.directionsShow")}
+          </button>
+          <button
+            className={`button button--outline button--sm${voiceEnabled ? " is-active" : ""}`}
+            onClick={toggleVoice}
+            type="button"
+          >
+            {voiceEnabled ? t("rideScreen.voiceOn") : t("rideScreen.voiceOff")}
+          </button>
+          <span>{voiceStatus}</span>
+        </div>
+
+        {directionsOpen ? (
+          <DirectionsPanel
+            directionSections={directionSections}
+            navigationState={navigationState}
+            onClose={() => setDirectionsOpen(false)}
+            routingProviderLabel={routingProviderLabel}
+            routingStatus={routedRoute ? "ready" : "loading"}
+            totalDirectionSteps={totalDirectionSteps}
+          />
+        ) : null}
+
+        <div className="ride-screen__stats">
+          <div>
+            <span className="stat-label">{t("rideScreen.statElapsed")}</span>
+            <strong>{formatDurationMinutes(elapsedMinutes)}</strong>
+          </div>
+          <div>
+            <span className="stat-label">{t("rideScreen.statTrail")}</span>
+            <strong>{formatMiles(trailMiles)}</strong>
+          </div>
         </div>
 
         <div className="hero-actions">

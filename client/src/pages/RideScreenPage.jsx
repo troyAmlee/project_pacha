@@ -1,28 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
+import DirectionsPanel from "../components/DirectionsPanel";
 import FormFeedback from "../components/FormFeedback";
 import NavigationMap from "../components/NavigationMap";
 import SuggestedRoutes from "../components/SuggestedRoutes";
 import TopBar from "../components/TopBar";
 import { useAuth } from "../context/AuthContext";
 import { useClubData } from "../context/ClubDataContext";
+import { useGpsTracker } from "../hooks/useGpsTracker";
+import { useRideTrail } from "../hooks/useRideTrail";
+import { useVoiceNavigation } from "../hooks/useVoiceNavigation";
 import { useTranslation } from "../i18n";
+import { buildDirectionSections, formatRoutingProviderLabel } from "../lib/directionSteps";
 import {
-  GPS_CAPTURE_OPTIONS,
-  computePathMiles,
   distanceBetweenPointsMiles,
   distanceFromPointToPathMiles,
   formatDurationMinutes,
-  formatNavigationDistance,
   formatMiles,
+  formatNavigationDistance,
   getDirectedRoutePath,
-  getGpsAccuracyMeters,
-  getMovementHeadingDegrees,
   getRouteNavigationState,
-  getRoutingWaypoints,
-  gpsPositionToPoint,
-  shouldAddGpsPoint
+  getRoutingWaypoints
 } from "../utils";
 
 const ROUTING_REFRESH_DISTANCE_MILES = 0.1;
@@ -35,13 +34,7 @@ export default function RideScreenPage() {
   const { member } = useAuth();
   const { data, loading, loadBootstrap } = useClubData();
   const { t } = useTranslation();
-  const [currentPosition, setCurrentPosition] = useState(null);
-  const [currentAccuracyMeters, setCurrentAccuracyMeters] = useState(null);
-  const [currentHeadingDegrees, setCurrentHeadingDegrees] = useState(null);
-  const [trail, setTrail] = useState([]);
-  const [tracking, setTracking] = useState(false);
-  const [rideStartedAt, setRideStartedAt] = useState(null);
-  const [elapsedMinutes, setElapsedMinutes] = useState(0);
+
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [routeDirection, setRouteDirection] = useState("forward");
@@ -49,18 +42,37 @@ export default function RideScreenPage() {
   const [routedRoute, setRoutedRoute] = useState(null);
   const [routedToStart, setRoutedToStart] = useState(null);
   const [routingStatus, setRoutingStatus] = useState("idle");
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
-  const [voiceStatus, setVoiceStatus] = useState(t("rideScreen.voiceStatusOff"));
   const [directionsOpen, setDirectionsOpen] = useState(false);
   const [feedback, setFeedback] = useState(
     location.state?.success ? { type: "success", message: location.state.success } : null
   );
-  const watchIdRef = useRef(null);
   const lastToStartRequestRef = useRef(null);
   const toStartRequestIdRef = useRef(0);
   const routeLegPendingRef = useRef(false);
-  const lastSpokenCueRef = useRef("");
-  const lastHeadingPointRef = useRef(null);
+
+  const {
+    currentPosition,
+    currentAccuracyMeters,
+    currentHeadingDegrees,
+    tracking,
+    startTracking,
+    stopTracking
+  } = useGpsTracker({
+    onError: ({ code }) => {
+      const message =
+        code === "unsupported"
+          ? t("rideScreen.geoUnsupported")
+          : code === "denied"
+            ? t("rideScreen.trackDenied")
+            : t("rideScreen.trackFailed");
+      setFeedback({ type: "error", message });
+    }
+  });
+
+  const { trail, trailMiles, rideStartedAt, elapsedMinutes, startRide, resetRide } = useRideTrail({
+    currentPosition,
+    tracking
+  });
 
   const route = data?.routes.find((item) => item.id === id);
   const savedRoutePath = route?.path ?? EMPTY_ROUTE_PATH;
@@ -116,7 +128,14 @@ export default function RideScreenPage() {
     (total, section) => total + section.steps.length,
     0
   );
-  const trailMiles = useMemo(() => computePathMiles(trail), [trail]);
+
+  const { voiceEnabled, voiceStatus, toggleVoice } = useVoiceNavigation({
+    navigationState,
+    tracking,
+    t,
+    onUnsupported: (message) => setFeedback({ type: "error", message })
+  });
+
   const routeStatus = useMemo(() => {
     if (offRouteMiles === null) {
       return {
@@ -174,26 +193,6 @@ export default function RideScreenPage() {
   }, [navigationState, offRouteMiles, tracking, t]);
 
   useEffect(() => {
-    if (!rideStartedAt) {
-      return undefined;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setElapsedMinutes(Math.max(1, Math.round((Date.now() - rideStartedAt) / 60000)));
-    }, 15000);
-
-    return () => window.clearInterval(intervalId);
-  }, [rideStartedAt]);
-
-  useEffect(() => {
-    return () => stopTracking();
-  }, []);
-
-  useEffect(() => {
-    return () => cancelVoiceNavigation();
-  }, []);
-
-  useEffect(() => {
     setRouteDirection("forward");
     setRouteLegStartPoint(null);
     routeLegPendingRef.current = false;
@@ -220,39 +219,6 @@ export default function RideScreenPage() {
       routeLegPendingRef.current = false;
     }
   }, [currentPosition, navigationState, routeLegStartPoint]);
-
-  useEffect(() => {
-    if (!voiceEnabled) {
-      return;
-    }
-
-    if (!tracking) {
-      setVoiceStatus("Voice guidance waits for GPS tracking.");
-      return;
-    }
-
-    const cue = navigationState?.cue;
-
-    if (!cue?.voiceInstruction || !shouldSpeakNavigationCue(cue, navigationState)) {
-      return;
-    }
-
-    const voiceKey = cue.voiceKey ?? `${navigationState.activeLeg}:${cue.primary}`;
-
-    if (lastSpokenCueRef.current === voiceKey) {
-      return;
-    }
-
-    lastSpokenCueRef.current = voiceKey;
-    setVoiceStatus(cue.voiceInstruction);
-    speakNavigationInstruction(cue.voiceInstruction);
-  }, [
-    navigationState?.activeLeg,
-    navigationState?.cue,
-    navigationState?.snappedToRoute,
-    tracking,
-    voiceEnabled
-  ]);
 
   useEffect(() => {
     setRoutedRoute(null);
@@ -367,9 +333,7 @@ export default function RideScreenPage() {
 
       await loadBootstrap();
       stopTracking();
-      setTrail([]);
-      setRideStartedAt(null);
-      setElapsedMinutes(0);
+      resetRide();
       setRouteLegStartPoint(null);
       setFeedback({
         type: "success",
@@ -416,70 +380,11 @@ export default function RideScreenPage() {
     }
   }
 
-  function startTracking() {
-    if (!navigator.geolocation) {
-      setFeedback({ type: "error", message: t("rideScreen.geoUnsupported") });
-      return;
-    }
-
-    if (watchIdRef.current !== null) {
-      return;
-    }
-
+  function handleStartTracking() {
     if (!rideStartedAt) {
-      setRideStartedAt(Date.now());
-      setElapsedMinutes(1);
+      startRide();
     }
-
-    setTracking(true);
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (position) => {
-        const point = gpsPositionToPoint(position);
-        const accuracyMeters = getGpsAccuracyMeters(position);
-        const headingDegrees = getMovementHeadingDegrees({
-          currentPoint: point,
-          previousPoint: lastHeadingPointRef.current,
-          gpsPosition: position
-        });
-
-        setCurrentPosition(point);
-        setCurrentAccuracyMeters(accuracyMeters);
-
-        if (headingDegrees !== null) {
-          setCurrentHeadingDegrees(headingDegrees);
-          lastHeadingPointRef.current = point;
-        } else if (!lastHeadingPointRef.current) {
-          lastHeadingPointRef.current = point;
-        }
-
-        setTrail((current) => {
-          if (!shouldAddGpsPoint(current, point)) {
-            return current;
-          }
-
-          return [...current, point];
-        });
-      },
-      (error) => {
-        stopTracking();
-        setFeedback({
-          type: "error",
-          message: error.code === 1 ? t("rideScreen.trackDenied") : t("rideScreen.trackFailed")
-        });
-      },
-      GPS_CAPTURE_OPTIONS
-    );
-  }
-
-  function stopTracking() {
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    }
-
-    setTracking(false);
-    setCurrentHeadingDegrees(null);
-    lastHeadingPointRef.current = null;
+    startTracking();
   }
 
   function toggleRouteDirection() {
@@ -490,27 +395,6 @@ export default function RideScreenPage() {
     lastToStartRequestRef.current = null;
     toStartRequestIdRef.current += 1;
     routeLegPendingRef.current = false;
-  }
-
-  function toggleVoiceNavigation() {
-    if (voiceEnabled) {
-      setVoiceEnabled(false);
-      setVoiceStatus(t("rideScreen.voiceStatusOff"));
-      lastSpokenCueRef.current = "";
-      cancelVoiceNavigation();
-      return;
-    }
-
-    if (!supportsVoiceNavigation()) {
-      const message = t("rideScreen.voiceUnsupported");
-      setVoiceStatus(message);
-      setFeedback({ type: "error", message });
-      return;
-    }
-
-    setVoiceEnabled(true);
-    setVoiceStatus(t("rideScreen.voiceStatusOn"));
-    speakNavigationInstruction(t("rideScreen.voiceStatusOn"));
   }
 
   return (
@@ -617,7 +501,7 @@ export default function RideScreenPage() {
                 </button>
                 <button
                   className={`button button--outline button--sm${voiceEnabled ? " is-active" : ""}`}
-                  onClick={toggleVoiceNavigation}
+                  onClick={toggleVoice}
                   type="button"
                 >
                   {voiceEnabled ? t("rideScreen.voiceOn") : t("rideScreen.voiceOff")}
@@ -666,7 +550,7 @@ export default function RideScreenPage() {
                     {t("rideScreen.pauseGps")}
                   </button>
                 ) : (
-                  <button className="button button--primary button--sm" onClick={startTracking} type="button">
+                  <button className="button button--primary button--sm" onClick={handleStartTracking} type="button">
                     {t("rideScreen.startGps")}
                   </button>
                 )}
@@ -674,10 +558,7 @@ export default function RideScreenPage() {
                 {!rideStartedAt ? (
                   <button
                     className="button button--outline button--sm"
-                    onClick={() => {
-                      setRideStartedAt(Date.now());
-                      setElapsedMinutes(1);
-                    }}
+                    onClick={startRide}
                     type="button"
                   >
                     {t("rideScreen.startWithout")}
@@ -745,307 +626,4 @@ export default function RideScreenPage() {
       </section>
     </div>
   );
-}
-
-function DirectionsPanel({
-  directionSections,
-  navigationState,
-  onClose,
-  routingProviderLabel,
-  routingStatus,
-  totalDirectionSteps
-}) {
-  const { t } = useTranslation();
-  return (
-    <aside
-      aria-labelledby="directions-panel-title"
-      className="directions-panel"
-      id="directions-panel"
-    >
-      <div className="directions-panel__header">
-        <div>
-          <p className="group-card__eyebrow">{t("directions.kicker")}</p>
-          <h2 id="directions-panel-title">{t("directions.title")}</h2>
-          <p>
-            {navigationState?.cue?.primary ??
-              (routingStatus === "loading" ? t("directions.loading") : t("directions.idle"))}
-          </p>
-        </div>
-        <button
-          aria-label={t("directions.hide")}
-          className="directions-panel__close"
-          onClick={onClose}
-          type="button"
-        >
-          {t("directions.hide")}
-        </button>
-      </div>
-
-      <div className="directions-panel__summary">
-        <span>{t("directions.steps", { count: totalDirectionSteps })}</span>
-        <span>
-          {routingProviderLabel
-            ? t("rideScreen.cueRoutingWith", { provider: routingProviderLabel })
-            : routingStatus === "loading"
-              ? t("rideScreen.cueRoutingLoading")
-              : t("rideScreen.cueRoutingFallback")}
-        </span>
-        {navigationState ? (
-          <span>{t("rideScreen.cueRemaining", { miles: formatNavigationDistance(navigationState.remainingMiles) })}</span>
-        ) : null}
-      </div>
-
-      <div className="directions-panel__body">
-        {directionSections.map((section) => (
-          <section className="directions-panel__section" key={section.key}>
-            <div className="directions-panel__section-heading">
-              <h3>{section.title}</h3>
-              {section.summary ? <span>{section.summary}</span> : null}
-            </div>
-            <ol className="directions-panel__steps">
-              {section.steps.map((step) => {
-                const active =
-                  navigationState?.activeLeg === section.leg &&
-                  navigationState?.cue?.stepIndex === step.originalIndex;
-
-                return (
-                  <li
-                    className={`directions-panel__step${active ? " is-active" : ""}`}
-                    key={step.key}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={`directions-panel__step-icon directions-panel__step-icon--${step.kind}`}
-                    />
-                    <div className="directions-panel__step-copy">
-                      <strong>{step.instruction}</strong>
-                      <span>{step.detail}</span>
-                    </div>
-                    <div className="directions-panel__step-meta">
-                      <span>{step.distanceLabel}</span>
-                      {active ? <b>{t("directions.current")}</b> : null}
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
-        ))}
-      </div>
-    </aside>
-  );
-}
-
-function formatRoutingProviderLabel(source) {
-  if (source === "graphhopper") {
-    return "GraphHopper";
-  }
-
-  if (source === "valhalla") {
-    return "Valhalla";
-  }
-
-  if (source === "osrm") {
-    return "OSRM";
-  }
-
-  return null;
-}
-
-function buildDirectionSections({ route, routedRoute, routedToStart, t }) {
-  if (!route) {
-    return [];
-  }
-
-  const sections = [];
-  const toStartSteps = normalizeDirectionSteps("to-start", routedToStart?.steps, t);
-  const routeSteps = normalizeDirectionSteps("route", routedRoute?.steps, t);
-
-  if (toStartSteps.length) {
-    sections.push({
-      key: "to-start",
-      leg: "to-start",
-      summary: formatDirectionSummary(routedToStart?.distanceMiles, routedToStart?.durationMinutes),
-      steps: toStartSteps,
-      title: t("directions.sectionToStart")
-    });
-  }
-
-  if (routeSteps.length) {
-    sections.push({
-      key: "route",
-      leg: "route",
-      summary: formatDirectionSummary(
-        routedRoute?.distanceMiles ?? route.distanceMiles,
-        routedRoute?.durationMinutes
-      ),
-      steps: routeSteps,
-      title: t("directions.sectionRoute")
-    });
-  }
-
-  if (!sections.length && route.path?.length >= 2) {
-    sections.push({
-      key: "saved-line",
-      leg: "route",
-      summary: formatDirectionSummary(route.distanceMiles),
-      steps: [
-        {
-          detail: t("directions.detailFallback"),
-          distanceLabel: formatNavigationDistance(0.005),
-          instruction: t("directions.stepSavedStart", { start: route.start }),
-          key: "saved-line-start",
-          kind: "depart",
-          originalIndex: -1
-        },
-        {
-          detail: t("directions.detailSavedFollow"),
-          distanceLabel: formatNavigationDistance(route.distanceMiles),
-          instruction: t("directions.stepSavedFollow"),
-          key: "saved-line-follow",
-          kind: "straight",
-          originalIndex: -2
-        },
-        {
-          detail: t("directions.detailSavedFinish"),
-          distanceLabel: formatNavigationDistance(0),
-          instruction: t("directions.stepSavedArrive"),
-          key: "saved-line-arrive",
-          kind: "arrive",
-          originalIndex: -3
-        }
-      ],
-      title: t("directions.sectionSaved")
-    });
-  }
-
-  return sections;
-}
-
-function normalizeDirectionSteps(leg, steps, t) {
-  if (!Array.isArray(steps)) {
-    return [];
-  }
-
-  return steps
-    .filter((step) => step && (step.instruction || step.voiceInstruction))
-    .map((step, index) => {
-      const instruction = cleanDirectionText(step.instruction || step.voiceInstruction);
-      const streetName = cleanDirectionText(step.name);
-      const distanceLabel = formatNavigationDistance(step.distanceMiles);
-      const durationLabel = step.durationMinutes
-        ? formatDurationMinutes(step.durationMinutes)
-        : "";
-      const detailParts = [];
-
-      if (streetName && !/unnamed/i.test(streetName)) {
-        detailParts.push(t("directions.detailVia", { street: streetName }));
-      }
-
-      if (durationLabel) {
-        detailParts.push(durationLabel);
-      }
-
-      return {
-        detail: detailParts.join(" · ") || t("directions.detailContinue"),
-        distanceLabel,
-        instruction,
-        key: `${leg}-${index}-${step.type || "step"}`,
-        kind: getDirectionStepKind(step, instruction),
-        originalIndex: index
-      };
-    });
-}
-
-function formatDirectionSummary(distanceMiles, durationMinutes) {
-  const parts = [];
-
-  if (Number.isFinite(Number(distanceMiles)) && Number(distanceMiles) > 0) {
-    parts.push(formatNavigationDistance(distanceMiles));
-  }
-
-  if (Number.isFinite(Number(durationMinutes)) && Number(durationMinutes) > 0) {
-    parts.push(formatDurationMinutes(durationMinutes));
-  }
-
-  return parts.join(" - ");
-}
-
-function cleanDirectionText(value) {
-  return String(value || "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function getDirectionStepKind(step, instruction) {
-  const type = String(step.type || "").toLowerCase();
-  const text = `${step.modifier || ""} ${instruction}`.toLowerCase();
-
-  if (type.includes("arrive") || /arrive|destination|finish/.test(text)) {
-    return "arrive";
-  }
-
-  if (type.includes("depart") || /start|depart/.test(text)) {
-    return "depart";
-  }
-
-  if (/left/.test(text)) {
-    return "left";
-  }
-
-  if (/right/.test(text)) {
-    return "right";
-  }
-
-  return "straight";
-}
-
-function supportsVoiceNavigation() {
-  return (
-    typeof window !== "undefined" &&
-    "speechSynthesis" in window &&
-    "SpeechSynthesisUtterance" in window
-  );
-}
-
-function shouldSpeakNavigationCue(cue, navigationState) {
-  if (
-    !navigationState ||
-    (navigationState.activeLeg === "route" && !navigationState.snappedToRoute)
-  ) {
-    return false;
-  }
-
-  if (cue.type === "depart") {
-    return true;
-  }
-
-  if (cue.type === "arrive") {
-    return cue.distanceMiles === undefined || cue.distanceMiles <= 0.08;
-  }
-
-  if (cue.distanceMiles === undefined) {
-    return true;
-  }
-
-  return cue.distanceMiles <= 0.25;
-}
-
-function speakNavigationInstruction(text) {
-  if (!supportsVoiceNavigation()) {
-    return;
-  }
-
-  window.speechSynthesis.cancel();
-  const utterance = new window.SpeechSynthesisUtterance(text);
-  utterance.rate = 0.95;
-  utterance.pitch = 1;
-  utterance.volume = 1;
-  window.speechSynthesis.speak(utterance);
-}
-
-function cancelVoiceNavigation() {
-  if (supportsVoiceNavigation()) {
-    window.speechSynthesis.cancel();
-  }
 }
