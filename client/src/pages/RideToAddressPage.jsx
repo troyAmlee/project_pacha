@@ -172,7 +172,7 @@ export default function RideToAddressPage() {
     <div className="app-shell">
       <TopBar />
 
-      <section className="content-section">
+      <section className="content-section ride-screen">
         <div className="section-heading">
           <p className="section-kicker">{t("rideTo.kicker")}</p>
           <h1>{destinationLabel}</h1>
