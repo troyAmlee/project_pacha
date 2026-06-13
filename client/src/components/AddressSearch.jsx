@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "../i18n";
-import { geocodeAddress } from "../geocode";
+import { createSearchSession, retrieveSuggestion, searchSuggestions } from "../geocode";
 
 const DEBOUNCE_MS = 250;
 const MIN_QUERY_LENGTH = 3;
@@ -21,11 +21,13 @@ export default function AddressSearch({
   const listboxId = useId();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
-  const [status, setStatus] = useState("idle"); // idle | loading | empty | error
+  const [status, setStatus] = useState("idle"); // idle | loading | empty | error | resolving
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [open, setOpen] = useState(false);
   const inputRef = useRef(null);
   const abortRef = useRef(null);
+  const retrieveAbortRef = useRef(null);
+  const sessionRef = useRef(createSearchSession());
 
   useEffect(() => {
     if (query.trim().length < MIN_QUERY_LENGTH) {
@@ -40,7 +42,12 @@ export default function AddressSearch({
       abortRef.current = controller;
       setStatus("loading");
 
-      geocodeAddress(query, { proximity, language, signal: controller.signal })
+      searchSuggestions(query, {
+        proximity,
+        language,
+        sessionToken: sessionRef.current,
+        signal: controller.signal
+      })
         .then((found) => {
           if (controller.signal.aborted) return;
           setResults(found);
@@ -61,22 +68,48 @@ export default function AddressSearch({
   useEffect(() => {
     return () => {
       if (abortRef.current) abortRef.current.abort();
+      if (retrieveAbortRef.current) retrieveAbortRef.current.abort();
     };
   }, []);
 
-  function handleSelect(result) {
-    if (!result || disabled) return;
-    onSelectResult?.(result);
-    setQuery("");
-    setResults([]);
-    setStatus("idle");
-    setOpen(false);
-    setHighlightIndex(-1);
-    // On mobile keyboards, blurring closes the keyboard so the user can see the map.
-    inputRef.current?.blur();
+  async function handleSelect(suggestion) {
+    if (!suggestion || disabled) return;
+
+    if (retrieveAbortRef.current) retrieveAbortRef.current.abort();
+    const controller = new AbortController();
+    retrieveAbortRef.current = controller;
+    setStatus("resolving");
+
+    try {
+      const resolved = await retrieveSuggestion(suggestion, {
+        language,
+        signal: controller.signal
+      });
+      if (controller.signal.aborted) return;
+      onSelectResult?.(resolved);
+      sessionRef.current = createSearchSession();
+      setQuery("");
+      setResults([]);
+      setStatus("idle");
+      setOpen(false);
+      setHighlightIndex(-1);
+      inputRef.current?.blur();
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      if (error.name === "AbortError") return;
+      setStatus("error");
+    }
   }
 
   function handleKeyDown(event) {
+    if (status === "resolving") {
+      if (event.key === "Escape") {
+        retrieveAbortRef.current?.abort();
+        setStatus(results.length ? "idle" : "empty");
+      }
+      return;
+    }
+
     if (!open || !results.length) {
       if (event.key === "ArrowDown" && results.length) {
         setOpen(true);
@@ -94,7 +127,7 @@ export default function AddressSearch({
       event.preventDefault();
     } else if (event.key === "Enter") {
       const picked = results[highlightIndex] ?? results[0];
-      handleSelect(picked);
+      void handleSelect(picked);
       event.preventDefault();
     } else if (event.key === "Escape") {
       setOpen(false);
@@ -102,7 +135,14 @@ export default function AddressSearch({
     }
   }
 
-  const showList = open && (results.length > 0 || status === "loading" || status === "empty" || status === "error");
+  const inputDisabled = disabled || status === "resolving";
+  const showList =
+    open &&
+    (results.length > 0 ||
+      status === "loading" ||
+      status === "empty" ||
+      status === "error" ||
+      status === "resolving");
 
   return (
     <div className="address-search">
@@ -150,13 +190,16 @@ export default function AddressSearch({
               ? `${listboxId}-${highlightIndex}`
               : undefined
           }
-          disabled={disabled}
+          disabled={inputDisabled}
           autoComplete="off"
           spellCheck={false}
         />
         {showList ? (
           <ul id={listboxId} role="listbox" className="address-search__listbox">
             {status === "loading" ? (
+              <li className="address-search__status">{t("routeBuilder.addressSearchLoading")}</li>
+            ) : null}
+            {status === "resolving" ? (
               <li className="address-search__status">{t("routeBuilder.addressSearchLoading")}</li>
             ) : null}
             {status === "empty" ? (
@@ -176,7 +219,7 @@ export default function AddressSearch({
                 className={`address-search__option${index === highlightIndex ? " is-highlighted" : ""}`}
                 onMouseDown={(event) => {
                   event.preventDefault();
-                  handleSelect(result);
+                  void handleSelect(result);
                 }}
                 onMouseEnter={() => setHighlightIndex(index)}
               >
